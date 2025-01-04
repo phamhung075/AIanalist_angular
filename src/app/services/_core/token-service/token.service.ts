@@ -30,10 +30,9 @@ export class TokenService {
 
     // Refresh the access token using the refresh token (HttpOnly cookies)
     refreshIdToken(): Observable<string> {
-        return this.http.post<{ idToken: string }>(
+        return this.http.get<{ idToken: string }>(
             `${this.apiUrl}/auth/refreshtoken`, 
             {},
-            { withCredentials: true } // Ensures cookies are sent
         ).pipe(
             tap((response) => {
                 this.setIdToken(response.idToken); // Save the new access token
