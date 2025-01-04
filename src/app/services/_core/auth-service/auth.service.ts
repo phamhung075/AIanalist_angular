@@ -44,10 +44,10 @@ export class AuthService {
 
   login(email: string, password: string): Observable<AuthResponse> {
     return this.restService
-      .post<AuthResponse>('/auth/signin', { 
+      .post<AuthResponse>('/auth/login', { 
         email, 
         password, 
-        space: 'admin'
+        space: 'user'
       })
       .pipe(
         tap((response : any) => {
