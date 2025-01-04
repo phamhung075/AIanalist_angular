@@ -10,6 +10,7 @@ import { environment } from '../../../../../environments/environment';
 export class TokenService {
     private apiUrl = `${environment.urlBackend}/api`;
     private idToken: string | null = null;
+    private refreshToken: string | null = null;
 
     constructor(private http: HttpClient) { }
 
