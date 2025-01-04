@@ -93,7 +93,7 @@ export class AuthService {
   }
 
   getUserDetails(): Observable<User> {
-    return this.restService.get<User>('/auth/me').pipe(
+    return this.restService.get<User>('/auth/current').pipe(
       tap((user) => {
         this.userSubject.next(user);
       }),
