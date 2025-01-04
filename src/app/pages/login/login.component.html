@@ -1,0 +1,193 @@
+<div
+  class="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8"
+>
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <!-- AI-themed animated logo container -->
+    <div class="relative h-32 sm:h-48 mx-auto mb-8">
+      <div
+        class="absolute inset-0 bg-blue-500/20 rounded-full animate-pulse"
+      ></div>
+      <div
+        class="absolute inset-4 bg-blue-500/40 rounded-full animate-pulse [animation-delay:0.2s]"
+      ></div>
+      <div
+        class="absolute inset-8 bg-blue-500/60 rounded-full animate-pulse [animation-delay:0.4s]"
+      ></div>
+      <div
+        class="absolute inset-0 h-full w-full flex items-center justify-center"
+      >
+        <span class="text-blue-500 text-4xl font-bold">AI</span>
+      </div>
+    </div>
+
+    <h2
+      class="text-center text-4xl md:text-5xl font-extrabold text-white animate-fade-in"
+    >
+      AI Analysis Portal
+    </h2>
+    <p class="mt-4 text-center text-base md:text-lg text-gray-400">
+      Access your AI insights or
+      <a
+        routerLink="/register"
+        class="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-200 underline decoration-2 decoration-blue-400/30 hover:decoration-blue-300"
+      >
+        create a new account
+      </a>
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div
+      class="bg-gray-800/50 backdrop-blur-lg py-8 px-4 shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 sm:rounded-2xl sm:px-10 border border-gray-700/50"
+    >
+      <!-- Neural network animation background -->
+      <div class="absolute inset-0 overflow-hidden rounded-2xl opacity-10">
+        <div
+          class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)]"
+        ></div>
+        <div
+          class="absolute w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(155,188,246,0.05)_50%,transparent_75%)] bg-[length:10px_10px] animate-[grid-move_20s_linear_infinite]"
+        ></div>
+      </div>
+
+      <form
+        [formGroup]="loginForm"
+        (ngSubmit)="onSubmit()"
+        class="space-y-6 relative"
+      >
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-300">
+            Email Interface
+          </label>
+          <div class="mt-1 relative">
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              required
+              class="appearance-none block w-full px-3 py-2.5 bg-gray-900/50 border border-gray-600 text-gray-300 rounded-lg shadow-inner placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 sm:text-sm"
+            />
+            <div
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+            ></div>
+          </div>
+          <div
+            *ngIf="
+              loginForm.get('email')?.touched && loginForm.get('email')?.invalid
+            "
+            class="mt-1 text-xs text-red-400 animate-shake"
+          >
+            Invalid email format detected
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-300">
+            Security Key
+          </label>
+          <div class="mt-1 relative">
+            <input
+              id="password"
+              type="password"
+              formControlName="password"
+              required
+              class="appearance-none block w-full px-3 py-2.5 bg-gray-900/50 border border-gray-600 text-gray-300 rounded-lg shadow-inner placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 sm:text-sm"
+            />
+            <div
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+            ></div>
+          </div>
+          <div
+            *ngIf="
+              loginForm.get('password')?.touched &&
+              loginForm.get('password')?.invalid
+            "
+            class="mt-1 text-xs text-red-400 animate-shake"
+          >
+            Security key required
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="remember"
+              formControlName="remember"
+              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label for="remember" class="ml-2 block text-sm text-gray-300">
+              Remember session
+            </label>
+          </div>
+          <a href="#" class="text-sm text-blue-400 hover:text-blue-300"
+            >Reset key?</a
+          >
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            [disabled]="loginForm.invalid || isLoading"
+            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
+          >
+            <svg
+              *ngIf="isLoading"
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span
+              class="group-hover:tracking-wider transition-all duration-200"
+            >
+              {{ isLoading ? "Initializing..." : "Initialize Session" }}
+            </span>
+          </button>
+        </div>
+
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-gray-800 text-gray-400">Or continue with</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="signInWithGoogle()"
+          class="w-full flex items-center justify-center gap-3 py-2 px-4 border border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-300 bg-gray-900/50 hover:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <img
+            src="https://www.google.com/favicon.ico"
+            alt="Google"
+            class="w-5 h-5"
+          />
+          Sign in with Google
+        </button>
+
+        <div
+          *ngIf="error"
+          class="mt-4 text-sm text-red-400 text-center bg-red-900/20 border border-red-900/50 p-3 rounded-lg animate-shake"
+        >
+          {{ error }}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

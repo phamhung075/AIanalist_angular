@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.footer-wave {
+    position: relative;
+    margin-top: -50px;
+}
+
+.footer-wave::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(to bottom right, transparent 49%, #1e3a8a 50%);
+}

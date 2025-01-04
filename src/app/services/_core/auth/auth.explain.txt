@@ -1,0 +1,78 @@
+Secure Authentication Implementation Guide
+===========================================
+
+This guide explains the implementation of a Hybrid Authentication approach using HttpOnly cookies for refreshToken and in-memory refreshToken storage.
+
+Security Overview
+----------------
+1. HttpOnly Cookie (refreshToken):
+   - Protected from XSS via HttpOnly attribute
+   - HTTPS-only transmission
+   - SameSite protection against CSRF
+   - Server-side validation
+
+2. In-Memory Token (refreshToken):
+   - Non-persistent storage
+   - Short lifespan
+   - Cleared on page reload
+   - XSS protection
+
+Key Security Features
+-------------------
+1. Token Rotation
+   - New token pair on refresh
+   - Server-side invalidation
+
+2. Automatic Session Management
+   - Forced logout on invalid tokens
+   - Server-side validation
+
+3. Protection Against Common Threats
+   - XSS Protection:
+     * HttpOnly cookies
+     * Memory-only storage
+     * Content Security Policy
+   
+   - CSRF Protection:
+     * SameSite cookie attributes
+     * CSRF tokens
+   
+   - Token Security:
+     * Short lifespans
+     * HTTPS enforcement
+     * Token blacklisting
+
+Implementation Guidelines
+-----------------------
+1. HTTPS Configuration
+   - Mandatory for all token operations
+   - Secure cookie attributes
+
+2. Token Lifecycle
+   - refreshToken: 15-minute lifespan
+   - refreshToken: 7-day lifespan
+   - Automatic rotation
+
+3. Security Measures
+   - Server-side validation
+   - Minimal token scopes
+   - Strong CSP implementation
+   - Activity monitoring
+   - Audit logging
+
+Best Practices
+-------------
+1. Token Management
+   - Regular rotation
+   - Automatic invalidation
+   - Secure storage
+
+2. Monitoring
+   - Usage patterns
+   - Suspicious activity
+   - Token revocation capability
+
+3. Implementation
+   - Least privilege principle
+   - Comprehensive logging
+   - Regular security audits
