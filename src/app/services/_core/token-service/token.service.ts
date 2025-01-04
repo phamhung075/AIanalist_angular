@@ -19,9 +19,17 @@ export class TokenService {
         return this.idToken;
     }
 
+    getRefreshToken(): string | null {
+        return this.refreshToken;
+    }
+
     // Set the access token
     setIdToken(token: string): void {
         this.idToken = token;
+    }
+
+    setRefreshToken(token: string): void {
+        this.refreshToken = token;
     }
 
     // Clear the access token
