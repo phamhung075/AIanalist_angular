@@ -1,0 +1,336 @@
+<div class="p-3 sm:p-6 md:p-8">
+    <!-- Header -->
+    <div class="mb-4 sm:mb-8">
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Gestion des Commerciaux</h1>
+        <p class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Gérez vos contacts commerciaux et suivez leurs
+            appels.</p>
+    </div>
+
+    <div class="mb-4 flex flex-wrap gap-2">
+        <button 
+            (click)="updateFilters(null, null, 'certificateur')"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            [class.bg-blue-600]="filters().entrepriseType === 'certificateur'"
+            [class.text-white]="filters().entrepriseType === 'certificateur'"
+            [class.bg-gray-100]="filters().entrepriseType !== 'certificateur'"
+            [class.text-gray-700]="filters().entrepriseType !== 'certificateur'"
+            [class.hover:bg-blue-700]="filters().entrepriseType === 'certificateur'"
+            [class.hover:bg-gray-200]="filters().entrepriseType !== 'certificateur'">
+            <i class="fas fa-certificate mr-2"></i>
+            Certificateurs
+        </button>
+        <button 
+            (click)="updateFilters(null, null, 'of')"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            [class.bg-blue-600]="filters().entrepriseType === 'of'"
+            [class.text-white]="filters().entrepriseType === 'of'"
+            [class.bg-gray-100]="filters().entrepriseType !== 'of'"
+            [class.text-gray-700]="filters().entrepriseType !== 'of'"
+            [class.hover:bg-blue-700]="filters().entrepriseType === 'of'"
+            [class.hover:bg-gray-200]="filters().entrepriseType !== 'of'">
+            <i class="fas fa-graduation-cap mr-2"></i>
+            Organismes de formation
+        </button>
+        <button 
+            (click)="updateFilters(null, null, 'financeur')"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            [class.bg-blue-600]="filters().entrepriseType === 'financeur'"
+            [class.text-white]="filters().entrepriseType === 'financeur'"
+            [class.bg-gray-100]="filters().entrepriseType !== 'financeur'"
+            [class.text-gray-700]="filters().entrepriseType !== 'financeur'"
+            [class.hover:bg-blue-700]="filters().entrepriseType === 'financeur'"
+            [class.hover:bg-gray-200]="filters().entrepriseType !== 'financeur'">
+            <i class="fas fa-euro-sign mr-2"></i>
+            Financeurs
+        </button>
+        <button 
+            *ngIf="filters().entrepriseType"
+            (click)="updateFilters(null, null, null)"
+            class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+            <i class="fas fa-times mr-2"></i>
+            Réinitialiser le filtre
+        </button>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
+        <!-- New Commercial Button -->
+        <button (click)="showNewCommercialModal = true"
+            class="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto">
+            <i class="fas fa-plus mr-2"></i>
+            Nouvel appel d'un contact
+        </button>
+
+        <!-- Search and Filter -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <!-- Status Filter -->
+            <select [ngModel]="filters().status" (ngModelChange)="updateFilters($event)"
+                class="px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                <option [ngValue]="null">Tous les statuts</option>
+                <option value="pas_repondu">Pas répondu</option>
+                <option value="pas_interesse">Pas intéressé</option>
+                <option value="a_rappeler">À rappeler</option>
+                <option value="rdv_pris">RDV pris</option>
+            </select>
+
+            <!-- Search -->
+            <div class="relative flex-1 sm:flex-initial">
+                <input type="text" [ngModel]="filters().search" (ngModelChange)="updateFilters(null, $event)"
+                    class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Rechercher par nom, entreprise...">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+
+            <!-- Refresh -->
+            <button (click)="loadAll()"
+                class="p-2 text-gray-600 hover:text-gray-900 bg-gray-100 rounded-lg hover:bg-gray-200">
+                <i class="fas fa-sync-alt" [class.animate-spin]="isLoading()"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Commercial List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden divide-y divide-gray-200">
+        <div *ngFor="let commercial of paginatedCommerciaux()" class="group">
+            <!-- Main Row -->
+            <div class="p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                    <!-- Left Side - Basic Info -->
+                    <div class="flex items-start space-x-3 sm:space-x-4">
+                        <div class="flex-shrink-0">
+                            <div
+                                class="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-user text-blue-600 text-lg sm:text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-base sm:text-lg font-medium text-gray-900">
+                                    {{commercial.contact?.prenom}} {{commercial.contact?.nom}}
+                                </h3>
+                            </div>
+                            <p class="text-sm text-gray-600">{{commercial.contact?.entreprise?.denomination}}</p>
+                            <div
+                                class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-1 text-sm text-gray-500">
+                                <a [href]="'tel:' + commercial.contact?.phone"
+                                    class="flex items-center hover:text-blue-600">
+                                    <i class="fas fa-phone mr-1"></i>
+                                    {{commercial.contact?.phone}}
+                                </a>
+                                <span *ngIf="commercial.contact?.email" class="flex items-center">
+                                    <i class="fas fa-envelope mr-1"></i>
+                                    {{commercial.contact?.email}}
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 sm:gap-4 mt-2 text-sm">
+                                <span class="flex items-center">
+                                    <i class="fas fa-phone-volume mr-1"></i>
+                                    {{commercial.nombre_appels}} appels
+                                </span>
+                                <span *ngIf="commercial.last_call" class="flex items-center flex-wrap gap-1">
+                                    <span [class]="getStatusBadgeClass(commercial.last_call.status)">
+                                        {{getStatusName(commercial.last_call.status)}}
+                                    </span>
+                                    <span *ngIf="commercial.last_call.date_rdv" class="flex items-center ml-2">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        RDV le {{commercial.last_call.date_rdv | date:'dd/MM/yyyy HH:mm'}}
+                                    </span>
+                                    <span class="text-gray-400 ml-2">par</span>
+                                    <span
+                                        class="truncate max-w-[150px]">{{commercial.last_call.updated_by_email}}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Side - Actions -->
+                    <div class="flex items-center justify-end gap-2 mt-2 sm:mt-0">
+                        <button (click)="addCall(commercial)"
+                            class="flex-1 sm:flex-initial inline-flex items-center justify-center px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200">
+                            <i class="fas fa-plus-circle mr-1"></i>
+                            <span>Déclarer un nouvel appel</span>
+                        </button>
+                        <button (click)="commercial.expanded = !commercial.expanded"
+                            class="p-1.5 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+                            <i class="fas" [class.fa-chevron-down]="!commercial.expanded"
+                                [class.fa-chevron-up]="commercial.expanded"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Expanded Section -->
+                <div *ngIf="commercial.expanded" class="mt-4 sm:pl-16">
+                    <!-- Call History -->
+                    <div class="space-y-3">
+                        <h4 class="font-medium text-gray-900">Historique des appels</h4>
+                        <div class="space-y-3">
+                            <div *ngFor="let call of commercial.historique_appel; let i = index"
+                                class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span [class]="getStatusBadgeClass(call.status)">
+                                            {{getStatusName(call.status)}}
+                                        </span>
+                                        <span class="text-sm text-gray-500">
+                                            {{call.date | date:'dd/MM/yyyy HH:mm'}}
+                                        </span>
+                                        <span *ngIf="call.date_rdv" class="text-sm text-gray-500">
+                                            <i class="fas fa-calendar mr-1"></i>
+                                            RDV le {{call.date_rdv | date:'dd/MM/yyyy HH:mm'}}
+                                        </span>
+                                        <span class="text-sm text-gray-500">
+                                            par <span class="font-medium text-gray-700">{{call.updated_by_email}}</span>
+                                        </span>
+                                    </div>
+                                    <button (click)="editComment(commercial, i)"
+                                        class="text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                </div>
+                                <p class="mt-2 text-sm text-gray-600">{{call.commentaire}}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="text-sm text-gray-700">
+            Affichage de {{startIndex() + 1}} à {{endIndex()}} sur {{filteredCommerciaux().length}} résultats
+        </div>
+        <div class="flex flex-wrap justify-center gap-2">
+            <button *ngFor="let page of [].constructor(totalPages()); let i = index" (click)="currentPage.set(i + 1)"
+                [class]="'px-3 py-1 rounded-md transition-colors ' +
+                    (currentPage() === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')">
+                {{i + 1}}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- New Commercial Modal -->
+<div *ngIf="showNewCommercialModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+    <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-2xl mx-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium">Nouvel appel</h3>
+            <button (click)="closeModals()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form (submit)="createCommercial($event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sélectionner un contact</label>
+                    <app-contact-selector 
+                        [contacts]="availableContacts()" 
+                        (contactSelected)="onContactSelected($event)">
+                    </app-contact-selector>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4">
+                    <button type="button" 
+                            (click)="closeModals()"
+                            class="px-4 py-2 border rounded-md hover:bg-gray-50">
+                        Annuler
+                    </button>
+                    <button type="submit" 
+                            [disabled]="!newCommercialForm.contact_id"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Créer l'appel
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- New Call Modal -->
+<div *ngIf="showAddCallModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+    <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium">Nouvel appel</h3>
+            <button (click)="closeModals()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form (submit)="submitNewCall($event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Statut</label>
+                    <select [(ngModel)]="newCallForm.status" name="status" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="pas_repondu">Pas répondu</option>
+                        <option value="pas_interesse">Pas intéressé</option>
+                        <option value="a_rappeler">À rappeler</option>
+                        <option value="rdv_pris">RDV pris</option>
+                    </select>
+                </div>
+                <div *ngIf="newCallForm.status === 'rdv_pris'">
+                    <label class="block text-sm font-medium text-gray-700">Date du RDV</label>
+                    <input type="datetime-local" [(ngModel)]="newCallForm.date_rdv" name="date_rdv" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Commentaire</label>
+                    <textarea [(ngModel)]="newCallForm.commentaire" name="commentaire" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500 min-h-[100px]"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+                    Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Comment Modal -->
+<div *ngIf="showEditCommentModal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+    <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium">Modifier le commentaire</h3>
+            <button (click)="closeModals()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form (submit)="submitEditComment($event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Commentaire</label>
+                    <textarea [(ngModel)]="editCommentForm.commentaire" name="commentaire" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500 min-h-[100px]"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+                    Mettre à jour
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="isLoading()" class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 flex items-center space-x-2">
+    <i class="fas fa-circle-notch animate-spin text-blue-600"></i>
+    <span class="text-sm text-gray-600">Chargement...</span>
+</div>
+
+<!-- Empty State -->
+<div *ngIf="filteredCommerciaux().length === 0 && !isLoading()" class="bg-white rounded-lg shadow-sm p-8 text-center">
+    <div class="text-gray-500">
+        <i class="fas fa-search text-4xl mb-4"></i>
+        <p *ngIf="filters().search || filters().status" class="text-lg">
+            Aucun commercial ne correspond aux critères de recherche
+        </p>
+        <p *ngIf="!filters().search && !filters().status" class="text-lg">
+            Aucun commercial enregistré
+        </p>
+        <button (click)="showNewCommercialModal = true"
+            class="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i>
+            Ajouter un commercial
+        </button>
+    </div>
+</div>

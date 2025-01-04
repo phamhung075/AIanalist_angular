@@ -1,0 +1,18 @@
+<p>tasks-section works!</p>
+<div class="bg-white rounded-lg shadow p-6">
+  <h2 class="flex items-center gap-3 text-blue-600 text-xl font-bold mb-4">
+      <span class="text-xl">✅</span>
+      Tâches à Compléter
+  </h2>
+  <ul class="divide-y divide-gray-200">
+      <li *ngFor="let task of tasks" class="py-3 flex items-center gap-3">
+          <input type="checkbox"
+                 [id]="task.id"
+                 class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label [for]="task.id" class="flex items-center gap-2">
+              <span class="text-xl">{{task.icon}}</span>
+              {{task.name}}
+          </label>
+      </li>
+  </ul>
+</div>

@@ -1,0 +1,324 @@
+<div class="p-3 sm:p-6 md:p-8">
+    <!-- Header -->
+    <div class="mb-4 sm:mb-8">
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Gestion des Entreprises et Contacts</h1>
+        <p class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Gérez vos entreprises et leurs contacts.</p>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
+        <!-- Buttons -->
+        <div class="flex flex-wrap gap-2">
+            <button (click)="openCreateEntrepriseModal()"
+                class="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-building mr-2"></i>
+                Nouvelle entreprise
+            </button>
+            <button (click)="openCreateContactModal()"
+                class="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <i class="fas fa-user mr-2"></i>
+                Nouveau contact
+            </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <!-- Type Filter -->
+            <select [ngModel]="selectedType()" (ngModelChange)="updateType($event)"
+                class="px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                <option [ngValue]="null">Tous les types</option>
+                <option value="certificateur">Certificateurs</option>
+                <option value="financeur">Financeurs</option>
+                <option value="of">Organismes de formation</option>
+            </select>
+
+            <!-- Entreprise Filter -->
+            <select [ngModel]="selectedEntrepriseId()" (ngModelChange)="selectEntreprise($event)"
+                class="px-3 py-2 border rounded-lg w-60 focus:outline-none focus:border-blue-500">
+                <option [ngValue]="null">Toutes les entreprises</option>
+                <option *ngFor="let entreprise of entreprises()" [value]="entreprise.id">
+                    {{entreprise.denomination}}
+                </option>
+            </select>
+
+            <!-- Search -->
+            <div class="relative flex-1 sm:flex-initial">
+                <input type="text" [ngModel]="searchTerm()" (ngModelChange)="updateSearch($event)"
+                    class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Rechercher...">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+
+            <!-- Refresh -->
+            <button (click)="loadAll()"
+                class="p-2 text-gray-600 hover:text-gray-900 bg-gray-100 rounded-lg hover:bg-gray-200">
+                <i class="fas fa-sync-alt" [class.animate-spin]="isLoading()"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Entreprises List -->
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
+            <div class="px-4 py-3 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">Entreprises</h2>
+            </div>
+            <div class="divide-y divide-gray-200 flex-1 overflow-auto">
+                <div *ngFor="let entreprise of entreprises() | slice:(currentPage-1)*itemsPerPage:currentPage*itemsPerPage"
+                    (click)="selectEntreprise(entreprise.id)" class="p-4 hover:bg-gray-50 cursor-pointer h-32"
+                    [class.bg-blue-50]="selectedEntrepriseId() === entreprise.id">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-900">{{entreprise.denomination}}</h3>
+                            <div class="mt-1">
+                                <p class="text-sm text-gray-500">
+                                    <i class="fas fa-building mr-2"></i>
+                                    SIRET: {{entreprise.siret || 'N/A'}}
+                                </p>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    <i class="fas fa-graduation-cap mr-2"></i>
+                                    {{entreprise.type === 'of' ? 'Organismes de formation' : entreprise.type ===
+                                    'certificateurs' ? 'Certificateurs' : entreprise.type === 'financeurs' ?
+                                    'Financeurs' : entreprise.type}}
+                                </p>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    <i class="fas fa-users mr-2"></i>
+                                    Contacts associés
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <i class="fas fa-edit text-blue-500 hover:text-blue-700 cursor-pointer"
+                                (click)="openEditEntrepriseModal(entreprise)"></i>
+                            <i class="fas fa-trash text-red-500 hover:text-red-700 cursor-pointer"
+                                (click)="openDeleteModal('entreprise', entreprise.id)"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+                <div class="flex items-center">
+                    <select [(ngModel)]="itemsPerPage" (change)="updatePagination()"
+                        class="border rounded px-2 py-1 text-sm">
+                        <option value="5">5 par page</option>
+                        <option value="8">8 par page</option>
+                        <option value="10">10 par page</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1"
+                        class="px-3 py-1 border rounded text-sm" [class.opacity-50]="currentPage === 1">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="px-3 py-1 text-sm">Page {{currentPage}} sur {{totalPages()}}</span>
+                    <button [disabled]="currentPage === totalPages()" (click)="currentPage = currentPage + 1"
+                        class="px-3 py-1 border rounded text-sm" [class.opacity-50]="currentPage === totalPages()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacts List -->
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
+            <div class="px-4 py-3 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">Contacts</h2>
+            </div>
+            <div class="divide-y divide-gray-200 flex-1 overflow-auto">
+                <div *ngFor="let contact of filteredContacts() | slice:(currentPageContact-1)*itemsPerPageContact:currentPageContact*itemsPerPageContact"
+                    class="p-4 hover:bg-gray-50 cursor-pointer h-32">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-900">
+                                {{contact.prenom}} {{contact.nom}}
+                            </h3>
+                            <p class="text-sm text-gray-500">{{getEntrepriseName(contact.entreprise_id)}}</p>
+                            <div class="mt-1 space-y-1">
+                                <p class="text-sm text-gray-500">
+                                    <i class="fas fa-phone mr-2"></i>
+                                    {{contact.phone}}
+                                </p>
+                                <p *ngIf="contact.email" class="text-sm text-gray-500">
+                                    <i class="fas fa-envelope mr-2"></i>
+                                    {{contact.email}}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <i class="fas fa-edit text-blue-500 hover:text-blue-700 cursor-pointer"
+                                (click)="openEditContactModal(contact)"></i>
+                            <i class="fas fa-trash text-red-500 hover:text-red-700 cursor-pointer"
+                                (click)="openDeleteModal('contact', contact.id)"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+                <div class="flex items-center">
+                    <select [(ngModel)]="itemsPerPageContact" (change)="updatePaginationContact()"
+                        class="border rounded px-2 py-1 text-sm">
+                        <option value="5">5 par page</option>
+                        <option value="8">8 par page</option>
+                        <option value="10">10 par page</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button [disabled]="currentPageContact === 1" (click)="currentPageContact = currentPageContact - 1"
+                        class="px-3 py-1 border rounded text-sm" [class.opacity-50]="currentPageContact === 1">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="px-3 py-1 text-sm">Page {{currentPageContact}} sur {{totalPagesContact()}}</span>
+                    <button [disabled]="currentPageContact === totalPagesContact()"
+                        (click)="currentPageContact = currentPageContact + 1" class="px-3 py-1 border rounded text-sm"
+                        [class.opacity-50]="currentPageContact === totalPagesContact()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal New Entreprise -->
+<div *ngIf="showNewEntrepriseModal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+    <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium">
+                {{isEditingEntreprise() ? 'Modifier l\'entreprise' : 'Nouvelle entreprise'}}
+            </h3>
+            <button (click)="showNewEntrepriseModal = false" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form (submit)="createEntreprise($event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Dénomination</label>
+                    <input type="text" [(ngModel)]="entrepriseForm.denomination" name="denomination" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Type d'entreprise</label>
+                    <select [(ngModel)]="entrepriseForm.type" name="type" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="">Sélectionner un type</option>
+                        <option value="certificateur">Certificateurs</option>
+                        <option value="financeur">Financeurs</option>
+                        <option value="of">Organismes de formation</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">SIRET</label>
+                    <input type="text" [(ngModel)]="entrepriseForm.siret" name="siret"
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+                    {{isEditingEntreprise() ? 'Modifier' : 'Créer'}}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal New Contact -->
+<div *ngIf="showNewContactModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+    <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium">
+                {{isEditingContact() ? 'Modifier le contact' : 'Nouveau contact'}}
+            </h3>
+            <button (click)="showNewContactModal = false" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form (submit)="createContact($event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Entreprise</label>
+                    <select [(ngModel)]="contactForm.entreprise_id" name="entreprise_id" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="">Sélectionner une entreprise</option>
+                        <option *ngFor="let entreprise of entreprises()" [value]="entreprise.id">
+                            {{entreprise.denomination}}
+                        </option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Poste du contact</label>
+                    <select [(ngModel)]="contactForm.type" name="type" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="">Sélectionner un poste</option>
+                        <option value="salarie">Salarié</option>
+                        <option value="representant">Représentant</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nom</label>
+                    <input type="text" [(ngModel)]="contactForm.nom" name="nom" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Prénom</label>
+                    <input type="text" [(ngModel)]="contactForm.prenom" name="prenom" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" [(ngModel)]="contactForm.email" name="email"
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Téléphone</label>
+                    <input type="tel" [(ngModel)]="contactForm.phone" name="phone" required
+                        class="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:border-blue-500"
+                        pattern="^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$" placeholder="Ex: 0612345678">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">
+                    {{isEditingContact() ? 'Modifier le contact' : 'Créer le contact'}}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div *ngIf="showDeleteModal()" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+    <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium">Confirmer la suppression</h3>
+            <button (click)="showDeleteModal.set(false)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <p class="text-gray-600 mb-4">
+            Êtes-vous sûr de vouloir supprimer
+            {{deleteType() === 'entreprise' ? 'cette entreprise' : 'ce contact'}} ?
+            Cette action est irréversible.
+        </p>
+        <div class="flex justify-end gap-3">
+            <button (click)="showDeleteModal.set(false)" class="px-4 py-2 border rounded-md hover:bg-gray-50">
+                Annuler
+            </button>
+            <button (click)="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                Supprimer
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="isLoading()" class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 flex items-center space-x-2">
+    <i class="fas fa-circle-notch animate-spin text-blue-600"></i>
+    <span class="text-sm text-gray-600">Chargement...</span>
+</div>
+
+<!-- Empty States -->
+<div *ngIf="entreprises().length === 0 && !isLoading()" class="text-center py-8 text-gray-500">
+    Aucune entreprise enregistrée
+</div>
+
+<div *ngIf="filteredContacts().length === 0 && !isLoading()" class="text-center py-8 text-gray-500">
+    Aucun contact trouvé
+</div>

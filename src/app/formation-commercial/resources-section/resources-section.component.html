@@ -1,0 +1,16 @@
+<p>resources-section works!</p>
+<div class="bg-white rounded-lg shadow p-6">
+  <h2 class="flex items-center gap-3 text-blue-600 text-xl font-bold mb-4">
+      <span class="text-xl">📚</span>
+      Ressources de Formation
+  </h2>
+  <ul class="space-y-4">
+      <li *ngFor="let resource of resources">
+          <a [href]="resource.url"
+             class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+              <span class="text-xl">{{resource.icon}}</span>
+              {{resource.name}}
+          </a>
+      </li>
+  </ul>
+</div>

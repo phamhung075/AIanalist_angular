@@ -1,0 +1,287 @@
+<div class="p-4 sm:p-8">
+
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Gestion des KYL</h1>
+    <p class="text-gray-600 mb-8">Gérez les demandes KYL des bénéficiaires de manière simple et efficace.</p>
+
+    <!-- Loading Overlay -->
+    <app-loading-overlay *ngIf="isLoading()"></app-loading-overlay>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="bg-red-100 text-red-700 border border-red-300 rounded-md px-4 py-3 mb-6">
+        {{ error }}
+    </div>
+    <!-- KYL List View -->
+    <div class="bg-white shadow rounded-lg overflow-hidden ">
+        <div class="flex flex-col md:flex-row justify-between items-center p-4">
+            <div class="ml-0 md:ml-4 p-2 flex flex-row gap-2">
+                <button *ngFor="let status of ['all', 'pending', 'completed', 'approved', 'rejected']"
+                    (click)="onStatusFilterChange(status)" [class]="
+                    'flex items-center px-2 py-2 sm:px-4 rounded-lg transition-colors ' +
+                    (selectedStatusFilter() === status
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+                  ">
+                    <!-- Example Icons for each status -->
+                    <i [class]="
+                      status === 'all' ? 'fas fa-list' :
+                      status === 'pending' ? 'fas fa-hourglass-half' :
+                      status === 'completed' ? 'fas fa-check' :
+                      status === 'approved' ? 'fas fa-thumbs-up' :
+                      'fas fa-ban'
+                    " class="mr-0 sm:mr-2"></i>
+                    <span class="hidden sm:inline">
+                        {{ status === 'all' ? 'Tous' : getStatusName(status) }}
+                    </span>
+                </button>
+                <button (click)="loadKYLs()"
+                    class="inline-flex items-center px-2 py-2 sm:px-4 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+                    <!-- Icon always visible -->
+                    <i class="fas fa-sync-alt" [class.animate-spin]="isLoading()"></i>
+                    <!-- Text visible only on larger screens -->
+                    <span class="hidden sm:inline ml-2">Actualiser</span>
+                </button>
+            </div>
+        </div>
+        <table class="min-w-full table-fixed divide-y divide-gray-200">
+            <colgroup>
+                <col class="w-1/2">
+                <col class="w-1/2">
+            </colgroup>
+            <thead class="bg-blue-800">
+                <tr>
+                    <th class="px-2 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-white">Bénéficiaire</th>
+                    <th class="px-2 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-white">Dossier</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let kyl of paginatedKyls()">
+                    <td class="px-2 sm:px-6 py-4">
+                        <div class="flex flex-col justify-center items-start">
+                            <div class="flex items-center w-[200px] sm: w-full overflow-hidden">
+                                <div
+                                    class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-500"></i>
+                                </div>
+                                <div class="ml-4 min-w-0 flex-1 overflow-hidden">
+                                    <div class="font-medium text-gray-900 text-sm truncate">
+                                        {{kyl.beneficiary?.first_name}} {{kyl.beneficiary?.last_name}}
+                                    </div>
+                                    <div class="text-xs text-gray-500 truncate">{{kyl.beneficiary?.email}}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-4 w-full">
+                                <a [href]="'tel:' + kyl.beneficiary?.phone"
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors">
+                                    <i class="fas fa-phone mr-1"></i>
+                                    <span class="inline">Appeler</span>
+                                </a>
+                                <a [href]="'sms:' + kyl.beneficiary?.phone + '?body=Vous avez reçu un email vous demandant de valider votre KYL'"
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
+                                    <i class="fas fa-sms mr-1"></i>
+                                    <span class="inline">Rappel</span>
+                                </a>
+                                <!-- <a [href]="'sms:' + kyl.beneficiary?.phone + 
+    '?body=' + encodeURIComponent(
+      'Vous avez reçu un email vous demandant de valider votre KYL. Voici votre QR code: ' + 
+      'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://localhost:4200/public-verif/3e573a75-9030-453c-80bc-f9297059d767'
+    )" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
+                                    <i class="fas fa-sms mr-1"></i>
+                                    <span class="inline">Test</span>
+                                </a> -->
+                                <a [href]="'sms:' + kyl.beneficiary?.phone + '?body=Bravo votre KYL est validé'"
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors">
+                                    <i class="fas fa-sms mr-1"></i>
+                                    <span class="inline">Validation</span>
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-2 sm:px-6 py-4">
+                        <div class="flex flex-col space-y-1">
+                            <div class="flex items-center">
+                                <span class="text-gray-500 text-xs sm:text-sm mr-2"><i
+                                        class="fas fa-calendar-plus"></i></span>
+                                <span class="text-gray-900 font-medium text-xs sm:text-sm">
+                                    {{ kyl.created_at | date:'dd/MM/yyyy HH:mm' }}
+                                </span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-gray-500 text-xs sm:text-sm mr-2"><i
+                                        class="fas fa-calendar-check"></i></span>
+                                <span class="text-gray-900 font-medium text-xs sm:text-sm">
+                                    {{ kyl.updated_at | date:'dd/MM/yyyy HH:mm' }}
+                                </span>
+                            </div>
+                            <div *ngIf="getDurationHours(kyl).show" class="flex items-center">
+                                <span
+                                    class="text-gray-500 text-xs sm:text-sm mr-2">{{getDurationHours(kyl).prefix}}:</span>
+                                <span [ngClass]="{
+                                    'bg-red-100 text-red-600 px-2 py-1 rounded-full': getDurationHours(kyl).numberHours > 48,
+                                    'bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full': getDurationHours(kyl).numberHours > 36 && getDurationHours(kyl).numberHours <= 48,
+                                    'bg-green-100 text-green-600 px-2 py-1 rounded-full': getDurationHours(kyl).numberHours <= 36
+                                }" class="font-medium text-xs sm:text-sm">
+                                    {{ getDurationHours(kyl).value}}
+                                </span>
+                            </div>
+                            <span [class]="getStatusBadgeClass(kyl.status)" class="text-xs sm:text-sm text-center w-32">
+                                {{ getStatusName(kyl.status) }}
+                            </span>
+                            <div class="flex gap-1 sm:gap-2">
+                                <ng-container *ngIf="kyl.status === 'completed'">
+                                    <button (click)="viewVideo(kyl)"
+                                        class="inline-flex items-center bg-blue-100 text-blue-600 p-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md hover:bg-blue-200"
+                                        title="Voir">
+                                        <i class="fas fa-video"></i>
+                                        <span class="hidden sm:inline ml-1">Voir</span>
+                                    </button>
+                                    <button (click)="approveKYL(kyl)"
+                                        class="inline-flex items-center bg-green-100 text-green-600 p-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md hover:bg-green-200"
+                                        title="Approuver">
+                                        <i class="fas fa-check"></i>
+                                        <span class="hidden sm:inline ml-1">Approuver</span>
+                                    </button>
+                                    <button (click)="rejectKYL(kyl)"
+                                        class="inline-flex items-center bg-red-100 text-red-600 p-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md hover:bg-red-200"
+                                        title="Rejeter">
+                                        <i class="fas fa-times"></i>
+                                        <span class="hidden sm:inline ml-1">Rejeter</span>
+                                    </button>
+                                </ng-container>
+                                <ng-container *ngIf="kyl.status === 'approved'">
+                                    <button (click)="viewVideo(kyl)"
+                                        class="inline-flex items-center bg-blue-100 text-blue-600 p-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md hover:bg-blue-200"
+                                        title="Voir">
+                                        <i class="fas fa-video"></i>
+                                        <span class="hidden sm:inline ml-1">Voir</span>
+                                    </button>
+                                </ng-container>
+                                <ng-container *ngIf="kyl.status === 'pending' || kyl.status === 'rejected'">
+                                    <span class="text-gray-400 text-xs sm:text-sm italic">Aucune action</span>
+                                </ng-container>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-6 flex justify-between items-center">
+        <div class="text-gray-700">
+            Affichage de {{ (currentPage() - 1) * itemsPerPage + 1 }} à {{ numberResults() }} sur {{ kyls().length }}
+            résultats
+        </div>
+        <div class="flex gap-2">
+            <button *ngFor="let page of [].constructor(totalPages()); let i = index" (click)="onPageChange(i + 1)"
+                [class]="
+                    'px-4 py-2 rounded-lg ' +
+                    (currentPage() === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+                ">
+                {{ i + 1 }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div *ngIf="showVideoModal && videoUrl"
+        class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6">
+        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] relative flex flex-col">
+            <button (click)="closeVideoModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-xl font-semibold p-6 text-gray-800">Vérification KYC</h3>
+
+            <div class="overflow-y-auto flex-1 px-6">
+                <!-- Stepper -->
+                <div class="mb-10 px-8">
+                    <div class="flex items-center justify-between relative">
+                        <div class="flex flex-col items-center text-center relative z-10">
+                            <div class="rounded-full h-16 w-16 flex items-center justify-center border-4 bg-white transition-all duration-300 ease-in-out"
+                                [ngClass]="{'border-blue-600 text-blue-600': currentStep >= 1, 'border-gray-300 text-gray-400': currentStep < 1}">
+                                <i class="fas fa-passport text-2xl"></i>
+                            </div>
+                            <div class="mt-4">
+                                <span class="font-medium"
+                                    [ngClass]="{'text-blue-600': currentStep >= 1, 'text-gray-500': currentStep < 1}">Documents
+                                    d'identité</span>
+                                <p class="text-sm text-gray-500 mt-1">Vérification des pièces</p>
+                            </div>
+                        </div>
+
+                        <div class="absolute left-[25%] right-[25%] top-8 h-1 bg-gray-200">
+                            <div class="h-full bg-blue-600 transition-all duration-300"
+                                [ngStyle]="{'width': currentStep === 2 ? '100%' : (currentStep === 1 ? '50%' : '0%')}">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center text-center relative z-10">
+                            <div class="rounded-full h-16 w-16 flex items-center justify-center border-4 bg-white transition-all duration-300 ease-in-out"
+                                [ngClass]="{'border-blue-600 text-blue-600': currentStep >= 2, 'border-gray-300 text-gray-400': currentStep < 2}">
+                                <i class="fas fa-video text-2xl"></i>
+                            </div>
+                            <div class="mt-4">
+                                <span class="font-medium"
+                                    [ngClass]="{'text-blue-600': currentStep >= 2, 'text-gray-500': currentStep < 2}">Vidéo
+                                    de vérification</span>
+                                <p class="text-sm text-gray-500 mt-1">Confirmation d'identité</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Documents -->
+                <div *ngIf="currentStep === 1" class="mb-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium mb-2">Document Recto</h4>
+                            <div class="border rounded-lg p-2 h-[300px] w-full">
+                                <a [href]="documentRecto" target="_blank" class="block h-full">
+                                    <img [src]="documentRecto" alt="Recto" class="w-full h-full object-contain">
+                                </a>
+                                <div class="mt-2 text-sm text-gray-600">Type: {{documentType}}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium mb-2">Document Verso</h4>
+                            <div class="border rounded-lg p-2 h-[300px] w-full">
+                                <a [href]="documentVerso" target="_blank" class="block h-full">
+                                    <img [src]="documentVerso" alt="Verso" class="w-full h-full object-contain">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <button (click)="nextStep()"
+                        class="mt-6 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center">
+                        Suivant
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Step 2: Video -->
+                <div *ngIf="currentStep === 2">
+                    <div class="aspect-w-16 aspect-h-9 bg-black rounded-lg overflow-hidden">
+                        <video #videoPlayer class="w-full h-full object-contain" controls controlsList="nodownload"
+                            preload="auto" autoplay poster="assets/images/video-placeholder.png">
+                            <source [src]="videoUrl" type="video/mp4">
+                            Votre navigateur ne supporte pas la lecture de vidéos.
+                        </video>
+                    </div>
+                    <div class="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                        <h4 class="font-medium mb-2 text-blue-800">Texte de vérification :</h4>
+                        <p class="text-blue-700">{{verificationText}}</p>
+                    </div>
+                    <div class="mt-6 flex justify-between items-center">
+                        <button (click)="previousStep()"
+                            class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Retour
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6"></div>
+        </div>
+    </div>
+</div>

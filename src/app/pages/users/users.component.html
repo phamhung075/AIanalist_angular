@@ -1,0 +1,165 @@
+<div class="p-4 sm:p-8">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Gestion des utilisateurs</h1>
+    <p class="text-gray-600 mb-8">Gérez les comptes utilisateurs et leurs accès à la plateforme.</p>
+
+    <!-- Loading Overlay -->
+    <app-loading-overlay *ngIf="isLoading"></app-loading-overlay>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="bg-red-100 text-red-700 border border-red-300 rounded-md px-4 py-3 mb-6">
+        {{ error }}
+    </div>
+
+    <!-- Users List View -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-blue-800 to-blue-600">
+                <tr>
+                    <th class="px-1 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-white tracking-wider">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-user"></i>
+                            <span>Utilisateur</span>
+                        </div>
+                    </th>
+                    <th class="px-1 sm:px-4 py-3 text-center text-xs sm:text-sm font-medium text-white tracking-wider">
+                        <div class="flex items-center justify-center space-x-2">
+                            <i class="fas fa-chart-line"></i>
+                            <span>KYLS</span>
+                        </div>
+                    </th>
+                    <th class="px-1 sm:px-4 py-3 text-center text-xs sm:text-sm font-medium text-white tracking-wider">
+                        <div class="flex items-center justify-center space-x-2">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Achats</span>
+                        </div>
+                    </th>
+                    <th class="px-1 sm:px-4 py-3 text-center text-xs sm:text-sm font-medium text-white tracking-wider">
+                        <div class="flex items-center justify-center space-x-2">
+                            <i class="fas fa-cog"></i>
+                            <span>Actions</span>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+                <tr *ngFor="let user of paginatedUsers" class="hover:bg-gray-50 transition-colors duration-150">
+                    <td class="px-1 sm:px-4 py-3">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-envelope text-gray-400"></i>
+                                <span class="text-gray-900 text-xs sm:text-sm font-medium">{{ user.email }}</span>
+                            </div>
+                            <div class="flex items-center space-x-2 text-gray-500 text-xs">
+                                <i class="far fa-calendar-alt"></i>
+                                <span>Inscrit le {{ user.created_at | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                            <div class="flex flex-row justify-start items-center">
+                                <span
+                                    [class]="user.is_active ? 'bg-green-100 text-green-600 border border-green-200' : 'bg-red-100 text-red-600 border border-red-200'"
+                                    class="px-2 py-1 rounded-full text-xs w-fit flex items-center space-x-1">
+                                    <i [class]="user.is_active ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                                    <span>{{ user.is_active ? 'Actif' : 'Inactif' }}</span>
+                                </span>
+                                <span
+                                    [class]="user.role === 'admin' ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-blue-100 text-blue-600 border border-blue-200'"
+                                    class="px-2 py-1 rounded-full text-xs w-fit flex items-center space-x-1 ml-2">
+                                    <i [class]="user.role === 'admin' ? 'fas fa-user-shield' : 'fas fa-user'"></i>
+                                    <span>{{ user.role === 'admin' ? 'Admin' : 'User' }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-1 sm:px-4 py-3">
+                        <div class="flex items-center justify-center space-x-2">
+                            <i class="fas fa-chart-bar text-blue-500"></i>
+                            <span class="text-gray-900 font-medium text-xs sm:text-sm">{{ user.kyls_count }}</span>
+                        </div>
+                    </td>
+                    <td class="px-1 sm:px-4 py-3">
+                        <div class="flex items-center justify-center space-x-2">
+                            <i class="fas fa-coins text-yellow-500"></i>
+                            <span class="text-gray-900 font-medium text-xs sm:text-sm">{{ user.credits_count }} <span
+                                     *ngIf="user.total_benefit > 0 && user.role != 'admin'" [class]="user.total_benefit > 0 ? 'text-green-600' : ''">({{ user.total_benefit.toFixed(2) }} €)</span></span>
+                        </div>
+                    </td>
+                    <td class="px-1 sm:px-4 py-3">
+                        <div class="flex flex-col gap-2 justify-center">
+                            <button (click)="toggleUserStatus(user)"
+                                [class]="user.is_active ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'"
+                                class="inline-flex items-center px-2 py-1 text-xs rounded-lg transition-colors duration-150 shadow-sm">
+                                <i class="fas" [class]="user.is_active ? 'fa-user-slash' : 'fa-user-check'"></i>
+                                <span class="ml-1">{{ user.is_active ? 'Désactiver' : 'Activer' }}</span>
+                            </button>
+                            <button (click)="toggleUserRole(user)"
+                                [class]="user.role === 'admin' ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' : 'bg-red-100 text-red-600 hover:bg-red-200'"
+                                class="inline-flex items-center px-2 py-1 text-xs rounded-lg transition-colors duration-150 shadow-sm">
+                                <i class="fas" [class]="user.role === 'admin' ? 'fa-user' : 'fa-user-shield'"></i>
+                                <span class="ml-1">{{ user.role === 'admin' ? 'Passer en User' : 'Passer en Admin'
+                                    }}</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-6 flex justify-between items-center">
+        <div class="text-gray-700 text-xs sm:text-sm">
+            Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à {{ getNumberResults() }} sur {{ users.length }}
+            résultats
+        </div>
+        <div class="flex gap-2">
+            <button *ngFor="let page of [].constructor(getTotalPages()); let i = index" (click)="onPageChange(i + 1)"
+                [class]="
+                    'px-3 py-1 rounded-lg text-xs sm:text-sm ' +
+                    (currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+                ">
+                {{ i + 1 }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Change Modal -->
+    <div *ngIf="showStatusModal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 class="text-xl font-semibold mb-4">Confirmation</h3>
+            <p class="text-gray-600 mb-6">
+                Êtes-vous sûr de vouloir {{ selectedUser?.is_active ? 'désactiver' : 'activer' }} le compte de
+                {{ selectedUser?.email }} ?
+            </p>
+            <div class="flex justify-end gap-4">
+                <button (click)="cancelStatusChange()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                    Annuler
+                </button>
+                <button (click)="confirmStatusChange()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Change Modal -->
+    <div *ngIf="showRoleModal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 class="text-xl font-semibold mb-4">Confirmation</h3>
+            <p class="text-gray-600 mb-6">
+                Êtes-vous sûr de vouloir passer en {{ selectedUser?.role == 'user' ? 'admin' : 'user' }} le compte de
+                {{ selectedUser?.email }} ?
+            </p>
+            <div class="flex justify-end gap-4">
+                <button (click)="cancelRoleChange()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                    Annuler
+                </button>
+                <button (click)="confirmRoleChange()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

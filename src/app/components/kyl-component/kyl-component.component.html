@@ -1,0 +1,238 @@
+<!-- KYL Container -->
+<!-- Progress Header Section -->
+<div class="max-w-3xl mx-auto my-4 bg-slate-900 rounded-xl shadow-xl" @slideAnimation>
+  <header class="px-4 py-3 bg-slate-800 rounded-t-xl">
+    <div class="flex items-center justify-between mb-2">
+      <h1 class="text-white text-lg font-medium">Vérification d'identité</h1>
+      <div class="text-slate-400 text-sm">Étape {{currentStep}}/4</div>
+    </div>
+    <!-- Progress Bar -->
+    <div class="h-2 bg-slate-700 rounded-full">
+      <div class="h-full bg-blue-500 rounded-full transition-all duration-300"
+           [style.width]="(currentStep / 4 * 100) + '%'">
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <div class="max-h-[calc(100vh-12rem)] overflow-y-auto">
+    <!-- Step 1: Consent Section -->
+    <div *ngIf="currentStep === 1" class="p-4 md:p-6">
+      <h2 class="text-xl text-white font-semibold mb-4">Consentement au traitement des données</h2>
+      
+      <!-- Consent Information Box -->
+      <div class="bg-slate-800 rounded-lg p-4 md:p-6 mb-6">
+        <p class="text-slate-300 mb-4">
+          En utilisant ce service, vous consentez au recueil et au traitement des données suivantes :
+        </p>
+        <ul class="list-disc text-slate-300 ml-6 mb-4">
+          <li>Identité (nom, prénom, date de naissance)</li>
+          <li>Copie de la pièce d'identité officielle</li>
+          <li>Coordonnées (email, téléphone)</li>
+          <li>Vidéo personne physique</li>
+        </ul>
+        <p class="text-slate-300 mb-4">
+          Ces informations sont collectées uniquement pour vérifier votre identité et prévenir la fraude.
+          Elles seront conservées de manière sécurisée pendant 1 an.
+        </p>
+        <p class="text-slate-300">
+          Vous disposez de droits sur ces données (accès, rectification, effacement, opposition, portabilité).
+          Pour les exercer, contactez notre délégué à la protection des données à {{dpoEmail}}.
+        </p>
+      </div>
+
+      <!-- Consent Form -->
+      <form [formGroup]="consentForm" (ngSubmit)="nextStep()" class="space-y-4">
+        <div class="flex items-start">
+          <input type="checkbox" formControlName="consent" class="mt-1 rounded border-gray-300" id="consent">
+          <label for="consent" class="ml-3 text-sm text-slate-300">
+            Je consens expressément au traitement de mes données personnelles conformément à ces conditions
+          </label>
+        </div>
+        <button type="submit" 
+                [disabled]="!consentForm.valid" 
+                class="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-slate-600 text-white rounded-lg px-6 py-3 font-medium transition-colors">
+          Continuer
+        </button>
+      </form>
+    </div>
+
+    <!-- Step 2: ID Document Section -->
+    <div *ngIf="currentStep === 2" class="p-4 md:p-6">
+      <h2 class="text-xl text-white font-semibold mb-4">Document d'identité</h2>
+      
+      <div class="space-y-6">
+        <!-- Document Type Selection -->
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h3 class="text-white font-medium mb-2">Type de document</h3>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <button *ngFor="let type of documentTypes" 
+                    (click)="selectDocumentType(type.value)"
+                    [class.bg-blue-500]="selectedDocType === type.value" 
+                    class="p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors text-center">
+              <i [class]="type.icon" class="text-2xl mb-2"></i>
+              <div class="text-sm text-slate-300">{{type.label}}</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Upload Section -->
+        <ng-container *ngIf="selectedDocType">
+          <div class="grid md:grid-cols-2 gap-4">
+            <div *ngFor="let side of ['recto', 'verso']" class="bg-slate-800 rounded-lg p-4">
+              <h3 class="text-white font-medium mb-2">
+                {{side === 'recto' ? 'Recto' : 'Verso'}}
+              </h3>
+              <div class="aspect-[1.586] relative border-2 border-dashed border-slate-600 rounded-lg overflow-hidden">
+                <img *ngIf="documents[side]?.image" 
+                     [src]="documents[side].image"
+                     class="absolute inset-0 w-full h-full object-cover">
+                <div *ngIf="!documents[side]?.image" 
+                     class="absolute inset-0 flex flex-col items-center justify-center">
+                  <i class="fas fa-camera text-slate-400 text-3xl mb-2"></i>
+                  <p class="text-sm text-slate-400">Cliquez pour scanner</p>
+                </div>
+                <input type="file" 
+                       (change)="handleDocumentUpload($event, side)" 
+                       accept="image/*" 
+                       capture="environment"
+                       class="absolute inset-0 opacity-0 cursor-pointer">
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <button (click)="nextStep()" 
+                [disabled]="!isDocumentComplete()" 
+                class="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-slate-600 text-white rounded-lg px-6 py-3 font-medium transition-colors">
+          Continuer
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Video Recording Section -->
+    <div *ngIf="currentStep === 3" class="relative aspect-video">
+      <!-- Warning Message -->
+      <div *ngIf="warningMessageRecording()" 
+           class="absolute top-0 left-0 w-full p-4 bg-red-600 text-white text-center">
+        {{warningMessageRecording()}}
+      </div>
+
+      <!-- Video Player -->
+      <video #videoPlayer
+             [class.hidden]="recordingState() === 'initial' || recordingState() === 'processing' || recordingState() === 'confirmed'"
+             [controls]="recordingState() === 'preview'" 
+             autoplay 
+             playsinline 
+             [muted]="true"
+             class="w-full h-full object-cover">
+      </video>
+
+      <!-- Recording States UI -->
+      <!-- Initial State -->
+      <div *ngIf="recordingState() === 'initial'"
+           class="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6 text-center">
+        <div class="w-16 md:w-20 h-16 md:h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
+          <i class="fas fa-camera text-blue-500 text-2xl md:text-3xl"></i>
+        </div>
+        <h2 class="text-lg md:text-xl font-semibold text-white mb-2">Prêt à commencer</h2>
+        <p class="text-slate-400 mb-4">
+          Nous allons enregistrer une courte vidéo.<br>
+          Assurez-vous d'être dans un endroit bien éclairé.
+        </p>
+        <button (click)="startPositioning()" 
+                class="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-6 py-3 flex items-center font-medium transition-colors">
+          <i class="fas fa-camera mr-2"></i>
+          Commencer
+        </button>
+      </div>
+
+      <!-- Positioning State -->
+      <div *ngIf="recordingState() === 'positioning'"
+           class="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6 text-center">
+        <div class="w-16 md:w-20 h-16 md:h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
+          <i class="fas fa-camera text-blue-500 text-2xl md:text-3xl"></i>
+        </div>
+        <h2 class="text-lg md:text-xl font-semibold text-white mb-2">Positionnez-vous devant la caméra</h2>
+        <p class="text-slate-400 mb-4">
+          Assurez-vous que votre visage est bien visible dans le cadre avant de commencer l'enregistrement.
+        </p>
+        <button (click)="startRecording()" 
+                class="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-6 py-3 flex items-center font-medium transition-colors">
+          <i class="fas fa-camera mr-2"></i>
+          Démarrer l'enregistrement
+        </button>
+      </div>
+
+      <!-- Recording Controls -->
+      <div *ngIf="recordingState() === 'recording'" 
+           class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
+        <button (click)="stopRecording()"
+                class="bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
+          <i class="fas fa-stop"></i>
+        </button>
+        <div class="bg-black/50 rounded-full px-4 py-2 text-white font-bold">
+          {{ countdown }}s
+        </div>
+      </div>
+
+      <!-- Preview Controls -->
+      <div *ngIf="recordingState() === 'preview'" 
+           class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
+        <button (click)="startPositioning()"
+                class="bg-green-500 hover:bg-green-600 text-white rounded-full px-6 py-2 font-bold">
+          Redémarrer l'enregistrement
+        </button>
+        @if(canConfirmer()){
+        <button (click)="confirmPreview()"
+                class="bg-blue-500 hover:bg-blue-600 text-white rounded-full px-6 py-2 font-bold">
+          Confirmer
+        </button>
+        }
+      </div>
+    </div>
+
+    <!-- Recording Instructions -->
+    <div *ngIf="recordingState() === 'recording' || recordingState() === 'positioning'" 
+         [@slideDown]
+         class="bg-slate-800/50 p-4 rounded-lg mb-6 max-w-lg mx-auto text-lg">
+      <p class="text-white mb-2 font-medium">Pendant l'enregistrement, veuillez dire clairement :</p>
+      <p class="text-slate-300">{{ textToSay }}</p>
+      <div class="max-w-md mx-auto"></div>
+    </div>
+
+    <!-- Step 4: Anti-fraud Declaration Section -->
+    <div *ngIf="currentStep === 4" class="p-4 md:p-6">
+      <h2 class="text-xl text-white font-semibold mb-4">Déclaration anti-fraude</h2>
+      
+      <!-- Declaration Text -->
+      <div class="bg-slate-800 rounded-lg p-4 md:p-6 mb-6">
+        <p class="text-slate-300 mb-4">
+          J'atteste que le centre de formation X n'a pas effectué de démarchage commercial
+          interdit par l'article L. 6323-8-1 du Code du travail, notamment qu'il n'a pas cherché
+          à collecter mes données personnelles ni le montant de mes droits CPF, et qu'aucune
+          compensation financière ne m'a été proposée.
+        </p>
+        <p class="text-slate-300">
+          Je suis informé(e) que toute infraction est passible d'une amende administrative pouvant
+          aller jusqu'à 75 000 euros pour une personne physique et 375 000 euros pour une personne morale.
+        </p>
+      </div>
+
+      <!-- Agreement Form -->
+      <form [formGroup]="antiFraudForm" (ngSubmit)="complete()" class="space-y-4">
+        <div class="flex items-start">
+          <input type="checkbox" formControlName="agreement" class="mt-1 rounded border-gray-300" id="agreement">
+          <label for="agreement" class="ml-3 text-sm text-slate-300">
+            Je certifie avoir lu et compris cette déclaration
+          </label>
+        </div>
+        <button type="submit" 
+                [disabled]="!antiFraudForm.valid" 
+                class="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-600 text-white rounded-lg px-6 py-3 font-medium transition-colors">
+          Terminer la vérification
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
