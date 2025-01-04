@@ -9,40 +9,40 @@ import { environment } from '../../../../../environments/environment';
 })
 export class TokenService {
     private apiUrl = `${environment.urlBackend}/api`;
-    private accessToken: string | null = null;
+    private idToken: string | null = null;
 
     constructor(private http: HttpClient) { }
 
     // Get the access token
-    getAccessToken(): string | null {
-        return this.accessToken;
+    getIdToken(): string | null {
+        return this.idToken;
     }
 
     // Set the access token
-    setAccessToken(token: string): void {
-        this.accessToken = token;
+    setIdToken(token: string): void {
+        this.idToken = token;
     }
 
     // Clear the access token
-    clearAccessToken(): void {
-        this.accessToken = null;
+    clearIdToken(): void {
+        this.idToken = null;
     }
 
     // Refresh the access token using the refresh token (HttpOnly cookies)
-    refreshAccessToken(): Observable<string> {
-        return this.http.post<{ accessToken: string }>(
+    refreshIdToken(): Observable<string> {
+        return this.http.post<{ idToken: string }>(
             `${this.apiUrl}/auth/refreshtoken`, 
             {},
             { withCredentials: true } // Ensures cookies are sent
         ).pipe(
             tap((response) => {
-                this.setAccessToken(response.accessToken); // Save the new access token
+                this.setIdToken(response.idToken); // Save the new access token
             }),
             catchError((error) => {
-                this.clearAccessToken();
+                this.clearIdToken();
                 return throwError(() => new Error('Failed to refresh access token'));
             }),
-            map(response => response.accessToken)
+            map(response => response.idToken)
         );
     }
     

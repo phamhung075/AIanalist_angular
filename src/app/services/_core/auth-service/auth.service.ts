@@ -37,7 +37,7 @@ export class AuthService {
   }
 
   private restoreSession(): void {
-    if (this.tokenService.getAccessToken()) {
+    if (this.tokenService.getIdToken()) {
       this.getUserDetails().subscribe();
     }
   }
@@ -51,7 +51,7 @@ export class AuthService {
       })
       .pipe(
         tap((response : any) => {
-          this.tokenService.setAccessToken(response.accessToken);
+          this.tokenService.setIdToken(response.accessToken);
           if (response.user) {
             this.userSubject.next(response.user);
           }
@@ -80,7 +80,7 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    const token = this.tokenService.getAccessToken();
+    const token = this.tokenService.getIdToken();
     if (!token) return false;
     
     // Optional: Add token expiration check
@@ -106,7 +106,7 @@ export class AuthService {
   }
 
   private clearSession(): void {
-    this.tokenService.clearAccessToken();
+    this.tokenService.clearIdToken();
     this.userSubject.next(null);
     this.stopRefreshTokenTimer();
   }
@@ -116,7 +116,7 @@ export class AuthService {
   }
 
   private startRefreshTokenTimer(): void {
-    const token = this.tokenService.getAccessToken();
+    const token = this.tokenService.getIdToken();
     if (!token) return;
 
     try {
@@ -127,7 +127,7 @@ export class AuthService {
       this.refreshTokenTimeout = setTimeout(() => {
         if (!this.isRefreshing) {
           this.isRefreshing = true;
-          this.tokenService.refreshAccessToken().pipe(
+          this.tokenService.refreshIdToken().pipe(
             finalize(() => this.isRefreshing = false)
           ).subscribe({
             next: () => this.startRefreshTokenTimer(),

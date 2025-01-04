@@ -9,7 +9,7 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private authService: AuthService, private tokenService: TokenService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const accessToken = this.tokenService.getAccessToken();
+    const accessToken = this.tokenService.getIdToken();
 
     // If there's an access token, attach it to the request headers
     if (accessToken) {
@@ -32,13 +32,13 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private handle401Error(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    return this.tokenService.refreshAccessToken().pipe(
+    return this.tokenService.refreshIdToken().pipe(
       switchMap(() => {
         // Retry the request with the new access token
-        const newAccessToken = this.tokenService.getAccessToken();
-        if (newAccessToken) {
+        const newIdToken = this.tokenService.getIdToken();
+        if (newIdToken) {
           const clonedRequest = req.clone({
-            headers: req.headers.set('Authorization', `Bearer ${newAccessToken}`),
+            headers: req.headers.set('Authorization', `Bearer ${newIdToken}`),
           });
           return next.handle(clonedRequest);
         }

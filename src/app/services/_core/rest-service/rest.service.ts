@@ -53,7 +53,7 @@ export class RestService {
     }
 
     // Attach the accessToken to the Authorization header
-    const accessToken = this.tokenService.getAccessToken();
+    const accessToken = this.tokenService.getIdToken();
     if (accessToken) {
       httpOptions.headers = httpOptions.headers.set(
         'Authorization',
@@ -72,14 +72,14 @@ export class RestService {
       catchError((error: HttpErrorResponse) => {
         // If the error is due to an expired token, refresh it
         if (error.status === 401 && !endpoint.includes('/auth/refresh')) {
-          return this.tokenService.refreshAccessToken().pipe(
+          return this.tokenService.refreshIdToken().pipe(
             switchMap(() => {
               // Retry the request with the new accessToken
-              const newAccessToken = this.tokenService.getAccessToken();
-              if (newAccessToken) {
+              const newIdToken = this.tokenService.getIdToken();
+              if (newIdToken) {
                 httpOptions.headers = httpOptions.headers.set(
                   'Authorization',
-                  `Bearer ${newAccessToken}`
+                  `Bearer ${newIdToken}`
                 );
               }
               return this.http.request<T>(method, `${this.apiUrl}${endpoint}`, {

@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
 
   canActivate(): Observable<boolean | UrlTree> {
     // Check if the access token exists
-    const accessToken = this.tokenService.getAccessToken();
+    const accessToken = this.tokenService.getIdToken();
 
     if (accessToken) {
       // If accessToken exists, allow navigation
@@ -24,7 +24,7 @@ export class AuthGuard implements CanActivate {
     }
 
     // If no accessToken, try refreshing the token
-    return this.tokenService.refreshAccessToken().pipe(
+    return this.tokenService.refreshIdToken().pipe(
       map(() => {
         // If refresh is successful, allow navigation
         return true;
