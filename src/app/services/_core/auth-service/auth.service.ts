@@ -94,8 +94,9 @@ export class AuthService {
 
   getUserDetails(): Observable<User> {
     return this.restService.get<User>('/auth/current').pipe(
-      tap((user) => {
-        this.userSubject.next(user);
+      tap((user: any) => {
+        this.userSubject.next(user.data);
+        console.log(user.data);
       }),
       catchError((error) => {
         this.clearSession();
