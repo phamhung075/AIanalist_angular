@@ -22,7 +22,7 @@ export class LayoutComponent {
 
   getUserName(): string {
     const user = this.authService.getCurrentUser();
-    return user?.company_name || 'Utilisateur';
+    return user?.email || 'Anonyme';
   }
 
   getCurrentRoute(): string {
