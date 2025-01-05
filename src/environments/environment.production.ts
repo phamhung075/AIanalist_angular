@@ -2,8 +2,9 @@
 
 export const environment = {
   production: true,
-  appId: 'kyl', // Add your Parse app ID here
+  appId: 'aianalist', // Add your Parse app ID here
   version:`0.0.1`,
-  urlBackend: 'https://api.yourdomain.com'
+  urlBackend: 'http://192.168.0.21:3333',
+  baseapi: '/api'
 };
-console.log("Environment Not Loaded");
+console.log("Aianalist Production environment");  

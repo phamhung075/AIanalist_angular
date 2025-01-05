@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "kyl-consultant": {
+    "aianalist": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/kyl-consultant",
+            "outputPath": "dist/aianalist",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": [
@@ -80,10 +80,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "kyl-consultant:build:production"
+              "buildTarget": "aianalist:build:production"
             },
             "development": {
-              "buildTarget": "kyl-consultant:build:development"
+              "buildTarget": "aianalist:build:development"
             }
           },
           "defaultConfiguration": "development"

@@ -1,24 +1,96 @@
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams, HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, filter, map, switchMap } from 'rxjs/operators';
-import { TokenService } from '../token-service/token.service';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RestService {
-  private apiUrl = `${environment.urlBackend}/api`;
+  private apiUrl = `${environment.urlBackend}${environment.baseapi}`;
 
-  constructor(private http: HttpClient, private tokenService: TokenService) {}
+  constructor(
+    private http: HttpClient
+  ) {
+    console.log('Environment:', environment.production ? 'Production' : 'Development');
+    console.log('API URL:', this.apiUrl);
+  }
+
+  private createRequestOptions(params?: any) {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      // Add origin header for production
+      ...(environment.production && {
+        'Origin': window.location.origin
+      })
+    });
+
+    const options = {
+      headers,
+      params: new HttpParams(),
+      withCredentials: true,
+      observe: 'response' as const
+    };
+
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        options.params = options.params.set(key, params[key]);
+      });
+    }
+
+    // Log request details
+    console.log('Request options:', {
+      environment: environment.production ? 'production' : 'development',
+      url: this.apiUrl,
+      headers: headers.keys(),
+      withCredentials: options.withCredentials,
+      cookies: document.cookie
+    });
+
+    return options;
+  }
 
   get<T>(endpoint: string, params?: any): Observable<T> {
-    return this.handleRequest<T>('GET', endpoint, null, params);
+    const url = `${this.apiUrl}${endpoint}`;
+    console.log(`Making GET request to: ${url}`);
+    
+    return this.http.get<T>(url, this.createRequestOptions(params)).pipe(
+      tap({
+        next: (response: any) => {
+          console.log(`Response headers for ${endpoint}:`, {
+            'set-cookie': response.headers.getAll('set-cookie'),
+            'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
+          });
+          console.log(`Response body from ${endpoint}:`, response.body);
+        },
+        error: (error) => {
+          console.error(`Error in GET request to ${endpoint}:`, {
+            status: error.status,
+            message: error.message,
+            headers: error.headers?.keys()
+          });
+        }
+      }),
+      map((response: any) => response.body)
+    );
   }
 
   post<T>(endpoint: string, data: any): Observable<T> {
-    return this.handleRequest<T>('POST', endpoint, data);
+    const url = `${this.apiUrl}${endpoint}`;
+    console.log(`Making POST request to: ${url}`, data);
+    
+    return this.http.post<T>(url, data, this.createRequestOptions()).pipe(
+      tap({
+        next: (response: any) => {
+          console.log(`Request headers for ${endpoint}:`, response.headers);
+          console.log(`Response cookies:`, response.headers.getAll('set-cookie'));
+          console.log(`Response from ${endpoint}:`, response.body);
+        },
+        error: (error) => console.error(`Error in POST request to ${endpoint}:`, error)
+      }),
+      map((response: any) => response.body)
+    );
   }
 
   put<T>(endpoint: string, data: any): Observable<T> {
@@ -39,62 +111,59 @@ export class RestService {
     data?: any,
     params?: any
   ): Observable<T> {
-    const httpOptions: any = {
-      headers: new HttpHeaders(),
+    const url = `${this.apiUrl}${endpoint}`;
+    console.log(`Making ${method} request to: ${url}`, data);
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+      }),
       params: new HttpParams(),
-      withCredentials: true, // Use cookies for refreshToken
+      withCredentials: true,
+      observe: 'response' as const
     };
 
-    // Add query parameters if provided
     if (params) {
       Object.keys(params).forEach((key) => {
         httpOptions.params = httpOptions.params.set(key, params[key]);
       });
     }
 
-    // Attach the accessToken to the Authorization header
-    const accessToken = this.tokenService.getIdToken();
-    if (accessToken) {
-      httpOptions.headers = httpOptions.headers.set(
-        'Authorization',
-        `Bearer ${accessToken}`
-      );
+    return this.http.request<T>(method, url, {
+      ...httpOptions,
+      body: data
+    }).pipe(
+      tap({
+        next: (response: any) => {
+          console.log(`Request headers for ${endpoint}:`, response.headers);
+          console.log(`Response from ${endpoint}:`, response.body);
+        },
+        error: (error) => console.error(`Error in ${method} request to ${endpoint}:`, error)
+      }),
+      map((response: any) => response.body),
+      catchError(this.handleError)
+    );
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    console.error('Full error response:', error);
+    
+    // If the error response matches our API error format, return it
+    if (error.error && 'success' in error.error && !error.error.success) {
+      return throwError(() => error.error);
     }
 
-    // Make the HTTP request and handle errors
-    return this.http.request<T>(method, `${this.apiUrl}${endpoint}`, {
-      ...httpOptions,
-      body: data,
-      observe: 'events', // Observe HTTP events for detailed lifecycle tracking
-    }).pipe(
-      filter((event: HttpEvent<T>) => event.type === HttpEventType.Response), // Only handle the response event
-      map((event: any) => event.body), // Extract the response body
-      catchError((error: HttpErrorResponse) => {
-        // If the error is due to an expired token, refresh it
-        if (error.status === 401 && !endpoint.includes('/auth/refresh')) {
-          return this.tokenService.refreshIdToken().pipe(
-            switchMap(() => {
-              // Retry the request with the new accessToken
-              const newIdToken = this.tokenService.getIdToken();
-              if (newIdToken) {
-                httpOptions.headers = httpOptions.headers.set(
-                  'Authorization',
-                  `Bearer ${newIdToken}`
-                );
-              }
-              return this.http.request<T>(method, `${this.apiUrl}${endpoint}`, {
-                ...httpOptions,
-                body: data,
-                observe: 'events',
-              }).pipe(
-                filter((event: HttpEvent<T>) => event.type === HttpEventType.Response),
-                map((event: any) => event.body)
-              );
-            })
-          );
-        }
-        return throwError(() => error); // Throw other errors
-      })
-    );
+    // Otherwise, create a standardized error response
+    return throwError(() => ({
+      success: false,
+      code: error.status,
+      message: error.message,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        statusCode: error.status === 0 ? 'NETWORK_ERROR' : error.statusText,
+        description: error.message,
+        responseTime: '0ms'
+      }
+    }));
   }
 }

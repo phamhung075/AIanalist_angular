@@ -5,5 +5,6 @@ export const environment = {
   appId: 'aianalist', // Add your Parse app ID here
   version: `0.0.1`,
   urlBackend: 'http://localhost:3333',
+  baseapi: '/api'
 };
 console.log("Environment Not Loaded");

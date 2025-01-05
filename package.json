@@ -6,7 +6,8 @@
     "start": "ng serve --host 0.0.0.0 --port 4444",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "pro": "ng build --configuration=production && http-server dist/aianalist -p 4444 --host 0.0.0.0 --cors=true -P http://192.168.0.21:3333"
   },
   "private": true,
   "dependencies": {
@@ -28,7 +29,8 @@
     "chart.js": "^4.4.7",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "gsap": "^3.12.2",
-    "kyl-consultant": "file:",
+    "http-server": "^14.1.1",
+    "aianalist": "file:",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

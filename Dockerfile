@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Sélectionner le script de build en fonction de PROJECT_NAME_QUERY
-RUN npm run build && mv dist/kyl-consultant /app/dist/build;
+RUN npm run build && mv dist/aianalist /app/dist/build;
 
 # Étape 2 : Construire l'image finale avec une image Nginx de base
 FROM nginx:stable-alpine
