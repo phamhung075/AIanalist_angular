@@ -1,0 +1,44 @@
+@use '../../../scss/autocomplete.scss';
+@use '../../../styles/tailwind.scss';
+
+img.profile-image {
+  width: 6rem !important;
+  object-fit: cover;
+  /* This ensures the image keeps its aspect ratio and fills the space */
+}
+
+.relative {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 1rem;
+  /* pb-4 in Tailwind */
+}
+
+.button-add {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin-bottom: 0.25rem; // mb-1 in Tailwind
+  margin-right: 0.25rem; // mr-1 in Tailwind
+  padding: 0rem 0.5rem; // py-0 px-2 in Tailwind
+  font-size: 0.75rem; // text-xs in Tailwind
+  background-color: #fecaca; // bg-red-200 in Tailwind
+  color: #ffffff; // text-white in Tailwind
+  font-weight: 700; // font-bold in Tailwind
+  border-radius: 9999px; // rounded-full in Tailwind
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); // shadow-md in Tailwind
+  transition: all 0.3s ease-in-out; // transition duration-300 ease-in-out in Tailwind
+  transform: translateY(0); // For hover effect reset
+  outline: none; // focus:outline-none in Tailwind
+
+  &:hover {
+    background-color: #dc2626; // hover:bg-red-600 in Tailwind
+    transform: translateY(-0.25rem) scale(1.1); // hover:-translate-y-1 hover:scale-110 in Tailwind
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.5); // focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 in Tailwind
+  }
+}

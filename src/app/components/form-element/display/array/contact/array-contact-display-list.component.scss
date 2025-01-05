@@ -1,0 +1,21 @@
+@use "../../../../scss/autocomplete.scss";
+
+ul {
+  list-style-type: none;
+  padding: 0;
+
+  li {
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+
+    span {
+      margin-right: 12px;
+    }
+  }
+}
+
+.list-contact{
+	background-color: #fafafa;
+	border: 1px solid #dedede;
+	width: 100%;
+}

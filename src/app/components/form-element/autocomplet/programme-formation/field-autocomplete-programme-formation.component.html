@@ -1,0 +1,146 @@
+<mat-form-field class="w-full mx-auto" appearance="fill" subscriptSizing="dynamic" [formGroup]="formGroup">
+	<mat-label>{{ fieldName }}</mat-label>
+	<input matInput type="text" placeholder="Recherche par titre" aria-label="titre programme formation"
+		[matAutocomplete]="auto" formControlName="{{ controlName }}" autocomplete="off" (blur)="onTouched()"
+		(focus)="initFilterOptions()" (click)="focus()" #value
+		class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+		[ngClass]="{'hidden-input': canClear(), 'visible-input': !canClear()}" />
+
+	<!-- Clear Button -->
+	@if (formControl && formControl.enabled && canClear()) {
+	<div class="clear-button">
+		<button (click)="clearInput(value)">
+			<mat-icon>clear</mat-icon>
+		</button>
+	</div>
+	}
+
+	<!-- Spinner -->
+	@if (this.loading) {
+	<mat-spinner matSuffix [diameter]="18"></mat-spinner>
+	}
+
+	<!-- Programme Catalogue -->
+	@if (formControl && formControl.value && valid()) {
+	@if (formControl.value?.titre) {
+	<div class="custom-display">
+		<div class="programme-display w-full space-y-4">
+			<div class="mb-4">
+				<p class="text-lg font-semibold lg:text-xl text-blue-600 break-words whitespace-normal">
+					{{ formControl.value.titre }}
+				</p>
+				@if (formControl.value?.publics) {
+				<p class="text-sm sm:text-base text-blue-600 break-words whitespace-normal">
+					<b class="text-gray-800">Public visé:</b> {{ formControl.value.publics }}
+				</p>
+				}
+				@if (formControl.value?.prixNetTaxe) {
+				<p class="text-sm sm:text-base text-purple-600 break-words whitespace-normal">
+					<b class="text-gray-800">Prix Net:</b> {{ formControl.value.prixNetTaxe }} €
+				</p>
+				}
+				@if (formControl.value?.delaisAcces) {
+				<p class="text-sm sm:text-base text-green-600 break-words whitespace-normal">
+					<b class="text-gray-800">Délai d'accès:</b> {{ formControl.value.delaisAcces }}
+				</p>
+				}
+				@if (formControl.value?.dureeEnJour) {
+				<p class="text-sm sm:text-base text-gray-600 break-words whitespace-normal">
+					<b class="text-gray-800">Durée:</b> {{ formControl.value.dureeEnJour }} jours
+					@if (formControl.value?.nombreHeures) {
+					<span class="ml-2">| <b class="text-gray-800">Nombre d'heures:</b> {{ formControl.value.nombreHeures }} heures</span>
+					}
+				</p>
+				}
+				@if (formControl.value?.coutHoraire) {
+				<p class="text-sm sm:text-base text-gray-600 break-words whitespace-normal">
+					<b class="text-gray-800">Coût horaire:</b> {{ formControl.value.coutHoraire }} €
+				</p>
+				}
+			</div>
+
+			<!-- Objectives Section -->
+			@if (formControl.value?.objectifs) {
+			<div class="programme-details bg-white border p-4 rounded-md shadow">
+				<p class="text-md md:text-lg mb-2 font-semibold text-gray-800 break-words whitespace-normal">
+					Objectifs et Modalités :
+				</p>
+				<ul class="space-y-2">
+					<li class="text-sm sm:text-base text-gray-600 break-words whitespace-normal">
+						{{ formControl.value.objectifs }}
+					</li>
+					@if (formControl.value?.modaliteEval) {
+					<li class="text-sm sm:text-base text-gray-600 break-words whitespace-normal">
+						{{ formControl.value.modaliteEval }}
+					</li>
+					}
+				</ul>
+			</div>
+			}
+
+			<!-- Accessibility Section -->
+			@if (formControl.value?.prerequis) {
+			<div class="programme-accessibility bg-white border p-4 rounded-md shadow">
+				<p class="text-sm sm:text-base  text-gray-600 break-words whitespace-normal mb-2">
+					<b class="text-gray-800">Prérequis:</b><br> {{ formControl.value.prerequis }}
+				</p>
+				@if (formControl.value?.accessibilitePersonnesHandicapees) {
+				<p class="text-sm sm:text-base  text-gray-600 break-words whitespace-normal mb-2">
+					<b class="text-gray-800">Accessibilité:</b><br> {{ formControl.value.accessibilitePersonnesHandicapees }}
+				</p>
+				}
+				@if (formControl.value?.methodesMobilisees) {
+				<p class="text-sm sm:text-base  text-gray-600 break-words whitespace-normal mb-2">
+					<b class="text-gray-800">Méthodes Mobilisées:</b><br> {{ formControl.value.methodesMobilisees }}
+				</p>
+				}
+				@if (formControl.value?.documentsFinFormation) {
+				<p class="text-sm sm:text-base  text-gray-600 break-words whitespace-normal">
+					<b class="text-gray-800">Documents fournis en fin de formation:</b><br>
+					{{ formControl.value.documentsFinFormation }}
+				</p>
+				}
+			</div>
+			}
+
+			<!-- Footer Details -->
+			<div class="bg-white border p-4 rounded-md shadow">
+				@if (formControl.value?.finaliteFormation) {
+				<p class="text-sm sm:text-base  text-gray-600 break-words whitespace-normal mb-2">
+					<b class="text-gray-800">Finalité de la formation:</b><br> {{ formControl.value.finaliteFormation }}
+				</p>
+				}
+				@if (formControl.value?.suiteParcours) {
+				<p class="text-sm sm:text-base  text-gray-600 break-words whitespace-normal mb-2">
+					<b class="text-gray-800">Suite de parcours possible:</b><br> {{ formControl.value.suiteParcours }}
+				</p>
+				}
+			</div>
+		</div>
+	</div>
+	}
+	}
+
+	<!-- Autocomplete -->
+	<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onOptionSelected($event)">
+		<mat-option class="border-b hover:bg-gray-50 py-3" *ngFor="let option of filteredOptions | async"
+			[value]="option">
+			<span class="text-sm sm:text-base">{{ option.titre }}</span>
+		</mat-option>
+	</mat-autocomplete>
+</mat-form-field>
+
+@if (formControl) {
+@if (formControl.invalid && (formControl.dirty || formControl.touched)) {
+<mat-error>
+	<span class="text-sm sm:text-base text-red-600 mt-1 break-words whitespace-normal">
+		{{ getErrorMessage() }}
+	</span>
+</mat-error>
+}
+@if (value && value.value && value.value.length < 2 && formControl.touched) { <span
+	class="text-sm sm:text-base text-blue-600 mt-1 break-words whitespace-normal">
+	La recherche doit contenir au moins 2 caractères
+	</span>
+	}
+	}

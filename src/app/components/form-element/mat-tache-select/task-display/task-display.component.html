@@ -1,0 +1,47 @@
+<div class="list-tasks">
+  @if (tachesDisplay$M()?.length === 0) {
+  <div class="mx-auto mt-5 p-5 w-max-400 border-solid border-2 border-stone-400 rounded-lg bg-[#fafafa]">
+    <p>Aucune tâche n'a été créée</p>
+  </div>
+  }
+  <ul class="mt-2 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-1 gap-y-5 sm:gap-x-2 sm:gap-y-6 md:gap-x-3 md:gap-y-8 lg:gap-x-5 lg:gap-y-10">
+    <li *ngFor="let task of tachesDisplay$M(); let i = index" class="task-item">
+      @if (task != null) {
+      <div class="px-4 py-5 sm:px-6">
+        <div class="flex items-center justify-center flex-row">
+          <mat-card class="mx-auto w-full bg-[#f4eca1] relative">
+            <div class="triangle"></div>
+            <mat-card-title class="ml-2 p-1"><b>{{task.titre}}</b></mat-card-title>
+            <mat-card-content>
+              <div class="flex items-center justify-between w-full">
+                <quill-view-html [content]="task.description!"></quill-view-html>
+                <button mat-mini-fab type="button" class="modify-element text-sm" *ngIf="_isEdit"
+                  (click)="openEditDialog(task, i)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
+              <div class="mt-4 flex items-center justify-between w-full">
+                <div>
+                  <p class="text-sm font-medium text-gray-500">
+                    Temps Limit: <span class="text-red-600"><b>{{task.tempsLimite}}</b></span>
+                  </p>
+                  <p class="text-sm font-medium text-gray-500">
+                    Status: <span class="text-red-600">
+                      <b>{{ task.realise ? 'Réalisé' : 'Non Réalisé' }}</b>
+                    </span>
+                  </p>
+                </div>
+                <div class="delete-button-container" *ngIf="_isEdit">
+                  <button mat-mini-fab type="button" class="delete-element text-sm" (click)="deleteTask(task,i)">
+                    <mat-icon>delete_forever</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+      }
+    </li>
+  </ul>
+</div>

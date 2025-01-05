@@ -1,0 +1,8 @@
+@if(_isEdit){
+
+  <button mat-mini-fab type="button" class="create-element text-sm" (click)="openDialog()"><mat-icon>add</mat-icon>
+  </button>
+}
+
+<app-task-display [(tachesDisplay$M)]="tachesDisplay$M" [_isEdit]="_isEdit" [_testView]="_testView"></app-task-display>
+

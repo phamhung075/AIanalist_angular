@@ -1,0 +1,117 @@
+<div>
+  <h2>{{titre$M()}}</h2>
+  <h3>{{description$M()}}</h3>
+  <form #form="ngForm" (ngSubmit)="onSubmit(form.value)" class="mx-auto">
+    <ul>
+      <li *ngFor="let question of questions$S(); let i = index">
+        <div *ngIf="question.type === 'short-answer'">
+          <b>{{ question.question }}</b>
+          <input type="text" [(ngModel)]="formData['question_' + i]" name="question_{{i}}">
+        </div>
+        <div *ngIf="question.type === 'paragraph'">
+          <b>{{ question.question }}</b>
+          <textarea [(ngModel)]="formData['question_' + i]" name="question_{{i}}"></textarea>
+        </div>
+        <div *ngIf="question.type === 'multiple-choice'">
+          <b>{{ question.question }}</b>
+          <select [(ngModel)]="formData['question_' + i]" name="question_{{i}}">
+            <option *ngFor="let option of question.options">{{ option }}</option>
+          </select>
+        </div>
+        <div *ngIf="question.type === 'checkboxes'">
+          <b>{{ question.question }}</b>
+          <div *ngFor="let option of question.options">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData['question_' + i + '_' + option]"
+                name="question_{{i}}_{{option}}"> {{ option }}
+            </label>
+          </div>
+        </div>
+        <div *ngIf="question.type === 'dropdown'">
+          <b>{{ question.question }}</b>
+          <select [(ngModel)]="formData['question_' + i]" name="question_{{i}}">
+            <option *ngFor="let option of question.options">{{ option }}</option>
+          </select>
+        </div>
+        <div *ngIf="question.type === 'linear-scale'">
+          <b>{{ question.question }}</b>
+
+          <mat-slider [min]="question.scaleMin" [max]="question.scaleMax" step="1" showTickMarks discrete
+            [displayWith]="formatLabel">
+            <input #valueSlider matSliderThumb [value]="question.scaleMin" [(ngModel)]="formData['question_' + i]" [ngModelOptions]="{standalone: true}"
+              (click)="onSliderChange(valueSlider.value, 'question_' + i)"> </mat-slider>
+
+        </div>
+        <div *ngIf="question.type === 'multiple-choice-grid'">
+          <b>{{ question.question }}</b>
+          <table>
+            <tr>
+              <th></th>
+              <th *ngFor="let col of question.columns">{{ col }}</th>
+            </tr>
+            <tr *ngFor="let row of question.rows">
+              <td>{{ row }}</td>
+              <td *ngFor="let col of question.columns">
+                <input type="radio" [(ngModel)]="formData['question_' + i + '_' + row]" name="question_{{i}}_{{row}}"
+                  [value]="col">{{ col }}
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div *ngIf="question.type === 'checkbox-grid'">
+          <b>{{ question.question }}</b>
+          <table>
+            <tr>
+              <th></th>
+              <th *ngFor="let col of question.columns">{{ col }}</th>
+            </tr>
+            <tr *ngFor="let row of question.rows">
+              <td>{{ row }}</td>
+              <td *ngFor="let col of question.columns">
+                <input type="checkbox" [(ngModel)]="formData['question_' + i + '_' + row + '_' + col]"
+                  name="question_{{i}}_{{row}}_{{col}}">{{ col }}
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div *ngIf="question.type === 'date'">
+          <b>{{ question.question }}</b>
+          <input type="date" [(ngModel)]="formData['question_' + i]" name="question_{{i}}">
+        </div>
+        <div *ngIf="question.type === 'time'">
+          <b>{{ question.question }}</b>
+          <input type="time" [(ngModel)]="formData['question_' + i]" name="question_{{i}}">
+        </div>
+        <div *ngIf="question.type === 'yesno'">
+          <b>{{ question.question }}</b>
+          <label><input type="radio" [(ngModel)]="formData['question_' + i]" name="question_{{i}}" value="yes">
+            Oui</label>
+          <label><input type="radio" [(ngModel)]="formData['question_' + i]" name="question_{{i}}" value="no">
+            Non</label>
+        </div>
+      </li>
+    </ul>
+    @if(review$M()===false){
+    <button type="submit">
+      @if(isNew$M()){
+        Enregistrer
+      }@else {
+        Mettre à jour
+      }
+    </button>
+    }
+
+    @if(_testView){
+
+    --------- enqueteForm ------------
+    <pre> enqueteRecueilInterne_objectId$M:  {{ enqueteRecueilInterne_objectId$M() }}</pre>
+    <pre>contactResponse$M:{{ contactResponse$M() | json }}</pre>
+    <pre>enqueteForm$M:{{ enqueteForm$M() | json }}</pre>
+    <pre>postData$M:{{ postData$M() | json }}</pre>
+    <pre>formData:{{ formData | json }}</pre>
+    <pre>review:{{ review$M() | json }}</pre>
+    <pre>isNew:{{ isNew$M() | json }}</pre>
+    }
+
+  </form>
+</div>

@@ -1,0 +1,91 @@
+<div class="w-full flex flex-col md:flex-row space-x-1 sm:space-x-2 md:space-x-3 lg:space-x-4">
+	<!-- Search Field Section -->
+	<div class="w-full lg:w-1/3 md:w-1/2">
+		<mat-form-field class="w-full mx-auto" appearance="fill" subscriptSizing="dynamic" [formGroup]="formGroup">
+			<mat-label>{{ fieldName }}</mat-label>
+			<input matInput type="text" placeholder="Recherche par nom Adresse Formation" aria-label="Adresse Formation"
+				[matAutocomplete]="auto" formControlName="{{ controlName }}" autocomplete="off" (click)="focus()"
+				(blur)="onTouched()" (focus)="initFilterOptions()" #value
+				[ngClass]="{ 'hidden-input': canClear(), 'visible-input': !canClear() }">
+
+			<!-- Clear Button -->
+			@if (formControl && formControl.enabled && canClear()) {
+			<div class="clear-button">
+				<button (click)="clearInput(value)">
+					<mat-icon>clear</mat-icon>
+				</button>
+			</div>
+			}
+
+			<!-- Loading Spinner -->
+			@if (this.loading) {
+			<mat-spinner matSuffix [diameter]="18"></mat-spinner>
+			}
+
+			<!-- Selected Address Display -->
+			@if (formControl && formControl.value && valid()) {
+			@if (formControl.value?.labelAdresse) {
+			<div
+				class="card-visite w-full mx-auto flex flex-col lg:flex-row justify-between items-start space-y-2 md:space-y-0 md:space-x-2 p-4 border rounded-lg">
+				<div class="w-full">
+					<p class="font-bold text-sm sm:text-md md:text-lg text-gray-800 break-words whitespace-normal">
+						{{ formControl.value?.labelAdresse }}
+					</p>
+					<div class="mt-2 text-xs sm:text-sm md:text-base text-gray-600">
+						<span class="block break-words whitespace-normal" *ngIf="formControl.value?.adresse">{{
+							formControl.value.adresse }}</span>
+						<span class="block break-words whitespace-normal" *ngIf="formControl.value?.codePostal">
+							{{ formControl.value.codePostal }}
+							{{ formControl.value?.ville ? formControl.value.ville : ',' }}
+						</span>
+						<span class="block break-words whitespace-normal" *ngIf="formControl.value?.region">{{
+							formControl.value.region }}</span>
+					</div>
+				</div>
+			</div>
+			}
+			}
+
+			<!-- Autocomplete Options -->
+			<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
+				(optionSelected)="onOptionSelected($event)">
+				<mat-option class="border border-t p-4" *ngFor="let option of filteredOptions | async" [value]="option">
+					@if (option.labelAdresse) {
+					<p class="font-bold text-sm sm:text-md text-gray-800">
+						{{ option.labelAdresse }}
+					</p>
+					}
+					<p class="text-sm sm:text-base text-gray-600 break-words whitespace-normal">
+						@if (option.adresse) {{{ option.adresse }} }
+						@if (option.codePostal) {{{ option.codePostal }} }
+						@if (option.ville) {{{ option.ville }} }
+					</p>
+				</mat-option>
+			</mat-autocomplete>
+		</mat-form-field>
+	</div>
+
+	<!-- Google Map Display Section -->
+	@if (formControl && formControl.value && address(formControl.value)) {
+	<div class="w-full lg:w-2/3 md:w-1/2 px-1 sm:px-2 md:px-3 lg:px-4">
+		<div class="w-full">
+			<app-display-google-map style="cursor: pointer;"
+				[address]="address(formControl.value)()"></app-display-google-map>
+		</div>
+	</div>
+	}
+</div>
+
+<!-- Validation and Errors -->
+@if (formControl) {
+@if (formControl.invalid && (formControl.dirty || formControl.touched)) {
+<mat-error>
+	<p class="text-sm sm:text-base text-red-500">{{ getErrorMessage() }}</p>
+</mat-error>
+}
+@if (value && value.value && value.value.length < 2 && formControl.touched) { <p
+	class="text-xs sm:text-sm text-gray-600 italic">
+	La recherche doit contenir au moins 2 caractères.
+	</p>
+	}
+	}

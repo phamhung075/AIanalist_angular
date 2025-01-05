@@ -1,0 +1,10 @@
+@use '../../../../styles/tailwind.scss';
+
+:host {
+  display: block;
+  pointer-events: auto !important;
+}
+
+:host .header-container {
+  pointer-events: auto !important;
+}

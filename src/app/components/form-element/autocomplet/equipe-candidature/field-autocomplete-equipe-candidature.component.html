@@ -1,0 +1,354 @@
+<mat-form-field class="w-full mx-auto" appearance="fill" subscriptSizing="dynamic" [formGroup]="formGroup">
+	<mat-label>{{ fieldName }}</mat-label>
+	<input matInput type="text" aria-label="Dénomination sociale" [matAutocomplete]="auto"
+		formControlName="{{ controlName }}" autocomplete="off" (blur)="onTouched()" (focus)="initFilterOptions()"
+		(click)="focus()" #value [ngClass]="{ 'hidden-input': canClear(), 'visible-input': !canClear() }" />
+
+	@if (formControl && formControl.enabled && canClear()) {
+	<div class="clear-button">
+		<button (click)="clearInput(value)">
+			<mat-icon>clear</mat-icon>
+		</button>
+	</div>
+	}
+
+	@if (this.loading) {
+	<mat-spinner matSuffix [diameter]="18"></mat-spinner>
+	}
+
+	@if (formControl && formControl.value && valid()) {
+	<div class="custom-display">
+		@if (formControl.value?.labelEquipe) {
+		<span
+			class="box box1 font-semibold text-blue-600 my-2 break-words whitespace-normal text-sm sm:text-md lg:text-lg">
+			<span class="text-gray-600">Label équipe:</span> {{ formControl.value.labelEquipe }}
+		</span>
+		}
+
+		<!-- Academie Audite -->
+		@if (formControl.value?.academieAudite) {
+		<div
+			class="w-full rounded-lg p-1 xs:p-1 sm:p-2 md:p-3 lg:p-4 bg-white mx-auto mb-2 border border-1 border-gray-200">
+			<h4 class="font-bold text-sm md:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+				Académie Audite
+			</h4>
+			<div class="flex flex-col md:flex-row items-center justify-center w-full mx-auto p-4">
+				<img alt="Academy Logo"
+					class="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105"
+					[src]="formControl.value.academieAudite.logoImage?.parseFile?.url ?? '/assets/images/no-logo.png'" />
+				<div class="flex flex-col text-center w-full mx-auto mt-4 md:mt-0">
+					<h1 class="text-sm sm:text-md lg:text-lg text-gray-800 mb-2 break-words whitespace-normal">
+						{{ formControl.value.academieAudite.denominationSociale }}
+					</h1>
+					<p class="text-xs sm:text-sm md:text-base text-gray-600 mb-4 break-words whitespace-normal">
+						{{ formControl.value.academieAudite.adresse }}, {{ formControl.value.academieAudite.codePostal
+						}}
+						{{ formControl.value.academieAudite.ville }}
+					</p>
+				</div>
+			</div>
+			<div class="w-full mx-auto">
+				<div class="flex items-center mb-2 text-xs sm:text-sm md:text-base">
+					<i class="fas fa-phone-alt text-gray-500 mr-2"></i>
+					<span class="text-gray-700 pl-4 break-words whitespace-normal">
+						{{ formControl.value.academieAudite.telephoneSociete }}
+					</span>
+				</div>
+				<div class="flex items-center text-xs sm:text-sm italic">
+					<i class="fas fa-envelope text-gray-500 mr-2"></i>
+					<span class="text-blue-600 pl-4 break-words whitespace-normal">
+						{{ formControl.value.academieAudite.mailSociete }}
+					</span>
+				</div>
+			</div>
+		</div>
+		}
+		@if (formControl.value?.consultant) {
+		<div
+			class="w-full rounded-lg p-1 xs:p-1 sm:p-2 md:p-3 lg:p-4 bg-white mx-auto mb-2 border border-1 border-gray-200">
+			<h4 class="font-bold text-sm md:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+				Consultant
+			</h4>
+			<div class="flex flex-col md:flex-row items-center md:items-start p-6">
+				<img [src]="formControl.value?.consultant?.profilePicture?.parseFile?.url ?? '/assets/images/no-profile.png'"
+					alt="Profile Consultant"
+					class="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105" />
+				<div class="mt-4 md:mt-0">
+					<p class="font-bold text-sm sm:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+						{{ formControl.value?.consultant.nom }} {{ formControl.value?.consultant.prenom }}
+					</p>
+					<p class="text-xs sm:text-sm text-blue-500 break-words whitespace-normal">
+						{{ formControl.value?.consultant.email }}
+					</p>
+					<p class="font-bold text-sm sm:text-md lg:text-lg text-green-500 break-words whitespace-normal">
+						{{ formControl.value?.consultant.numPortable }}
+					</p>
+				</div>
+			</div>
+
+			<div class="professional-categories mb-6">
+				<h3
+					class="font-semibold text-sm mb-3 text-gray-800 transition-transform duration-500 hover:translate-y-1 hover:text-indigo-600">
+					Catégories professionnelles :
+				</h3>
+				<ul class="flex flex-wrap -m-1">
+					@for (category of formControl.value?.consultant?.categorieContact; track category) {
+					<li
+						class="bg-indigo-100 text-indigo-800 rounded-full px-4 py-2 text-xs font-semibold m-1 transition-transform duration-300 hover:scale-105">
+						{{ category }}
+					</li>
+					}
+				</ul>
+			</div>
+
+			<div class="border-t border-gray-200 pt-4 mt-4">
+				<p class="text-sm sm:text-md text-gray-800 font-semibold break-words whitespace-normal">
+					{{ formControl.value?.consultant?.academieAudite?.denominationSociale }}
+				</p>
+				<p class="text-xs sm:text-sm text-gray-600 break-words whitespace-normal">
+					{{ formControl.value?.consultant?.academieAudite?.adresse }},
+					{{ formControl.value?.consultant?.academieAudite?.codePostal }},
+					{{ formControl.value?.consultant?.academieAudite?.ville }}
+				</p>
+			</div>
+		</div>
+
+		}
+		@if (formControl.value?.responsableHandicap){
+		<div
+			class="w-full rounded-lg p-1 xs:p-1 sm:p-2 md:p-3 lg:p-4 bg-white mx-auto mb-2 border border-1 border-gray-200">
+			<h4 class="font-bold text-sm md:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+				Responsable Handicap
+			</h4>
+			<div class="flex flex-col md:flex-row items-center md:items-start p-6">
+				<img [src]="formControl.value?.responsableHandicap?.profilePicture?.parseFile?.url ?? '/assets/images/no-profile.png'"
+					alt="Profile Responsable Handicap"
+					class="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105" />
+				<div class="mt-4 md:mt-0">
+					<p class="font-bold text-sm sm:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+						{{ formControl.value?.responsableHandicap.nom }} {{
+						formControl.value?.responsableHandicap.prenom }}
+					</p>
+					<p class="text-xs sm:text-sm text-blue-500 break-words whitespace-normal">
+						{{ formControl.value?.responsableHandicap.email }}
+					</p>
+					<p class="font-bold text-sm sm:text-md lg:text-lg text-green-500 break-words whitespace-normal">
+						{{ formControl.value?.responsableHandicap.numPortable }}
+					</p>
+				</div>
+			</div>
+
+			<div class="professional-categories mb-6">
+				<h3
+					class="font-semibold text-sm mb-3 text-gray-800 transition-transform duration-500 hover:translate-y-1 hover:text-indigo-600">
+					Catégories professionnelles :
+				</h3>
+				<ul class="flex flex-wrap -m-1">
+					@for (category of formControl.value?.responsableHandicap?.categorieContact; track category){
+					<li
+						class="bg-indigo-100 text-indigo-800 rounded-full px-4 py-2 text-xs font-semibold m-1 transition-transform duration-300 hover:scale-105">
+						{{ category }}
+					</li>
+					}
+				</ul>
+			</div>
+
+			<div class="border-t border-gray-200 pt-4 mt-4">
+				<p class="text-sm sm:text-md text-gray-800 font-semibold">
+					{{ formControl.value?.responsableHandicap?.academieAudite?.denominationSociale }}
+				</p>
+				<p class="text-xs sm:text-sm text-gray-600">
+					{{ formControl.value?.responsableHandicap?.academieAudite?.adresse }},
+					{{ formControl.value?.responsableHandicap?.academieAudite?.codePostal }},
+					{{ formControl.value?.responsableHandicap?.academieAudite?.ville }}
+				</p>
+			</div>
+		</div>
+		}
+
+		@if (formControl.value?.responsablePedagogique){
+		<div
+			class="w-full rounded-lg p-1 xs:p-1 sm:p-2 md:p-3 lg:p-4 bg-white mx-auto mb-2 border border-1 border-gray-200">
+			<h4 class="font-bold text-sm md:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+				Responsable Pédagogique
+			</h4>
+			<div class="flex flex-col md:flex-row items-center md:items-start p-6">
+				<img [src]="formControl.value?.responsablePedagogique?.profilePicture?.parseFile?.url ?? '/assets/images/no-profile.png'"
+					alt="Profile Responsable Pédagogique"
+					class="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105" />
+				<div class="mt-4 md:mt-0">
+					<p class="font-bold text-sm sm:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+						{{ formControl.value?.responsablePedagogique.nom }} {{
+						formControl.value?.responsablePedagogique.prenom }}
+					</p>
+					<p class="text-xs sm:text-sm text-blue-500 break-words whitespace-normal">
+						{{ formControl.value?.responsablePedagogique.email }}
+					</p>
+					<p class="font-bold text-sm sm:text-md lg:text-lg text-green-500 break-words whitespace-normal">
+						{{ formControl.value?.responsablePedagogique.numPortable }}
+					</p>
+				</div>
+			</div>
+
+			<div class="professional-categories mb-6">
+				<h3
+					class="font-semibold text-sm mb-3 text-gray-800 transition-transform duration-500 hover:translate-y-1 hover:text-indigo-600">
+					Catégories professionnelles :
+				</h3>
+				<ul class="flex flex-wrap -m-1">
+					@for (category of formControl.value?.responsablePedagogique?.categorieContact; track category) {
+					<li
+						class="bg-indigo-100 text-indigo-800 rounded-full px-4 py-2 text-xs font-semibold m-1 transition-transform duration-300 hover:scale-105">
+						{{ category }}
+					</li>
+					}
+				</ul>
+			</div>
+
+			<div class="border-t border-gray-200 pt-4 mt-4">
+				<p class="text-sm sm:text-md text-gray-800 font-semibold">
+					{{ formControl.value?.responsablePedagogique?.academieAudite?.denominationSociale }}
+				</p>
+				<p class="text-xs sm:text-sm text-gray-600">
+					{{ formControl.value?.responsablePedagogique?.academieAudite?.adresse }},
+					{{ formControl.value?.responsablePedagogique?.academieAudite?.codePostal }},
+					{{ formControl.value?.responsablePedagogique?.academieAudite?.ville }}
+				</p>
+			</div>
+		</div>
+		}
+		@if (formControl.value?.equipeFormateur){
+		@if (contactsDisplay$M()){
+		<div class="w-full rounded-lg p-1 xs:p-1 sm:p-2 md:p-3 lg:p-4 bg-white mx-auto mb-2 border border-1 border-gray-200">
+			<h3 class="font-bold text-sm md:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+				Équipe Formateur
+			</h3>
+
+			<div class="bg-transparent w-full" [ngClass]="{
+						'border-solid border-indigo-200 col-span-1': _isEdit,
+						'col-span-2': !_isEdit,
+			
+						}">
+				<lib-selected-contacts [disableDeleteContact]="true" [(contactsDisplay$M)]="contactsDisplay$M"
+					[(isFullScreen)]="isFullScreen" [_testView]="false" [_isEdit]="_isEdit" [displayMainContact]="true"
+					mainContactLabel="Responsable Équipe Formateur"
+					maintContantHint="Responsable Équipe Formateur validera les épreuves des bénéficiaires."></lib-selected-contacts>
+			</div>
+
+
+		</div>
+
+		}
+		<ng-template #noContacts>
+			<p>No selected contacts.</p>
+		</ng-template>
+		}
+	</div>
+	}
+
+	<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onOptionSelected($event)">
+		<mat-option class="border border-t p-4" *ngFor="let option of filteredOptions | async" [value]="option">
+			<!-- Label équipe -->
+			@if (option.labelEquipe !== null) {
+			<div class="flex flex-col mb-2">
+				<span class="text-sm sm:text-md font-semibold text-gray-800 break-words whitespace-normal">
+					<b>Label équipe: </b>{{ option?.labelEquipe }}
+				</span>
+			</div>
+			}
+
+			<!-- Académie Audite -->
+			@if (option.academieAudite !== null) {
+			<div class="flex flex-col mb-2">
+				<span class="text-sm sm:text-md font-semibold text-gray-800 break-words whitespace-normal">
+					<b>Académie Audite: </b>
+					@if (option.academieAudite?.denominationSociale) {
+					{{ option.academieAudite?.denominationSociale }},
+					}
+					@if (option.academieAudite?.codePostal) {
+					{{ option.academieAudite?.codePostal }},
+					}
+					@if (option.academieAudite?.ville) {
+					{{ option.academieAudite?.ville }}
+					}
+				</span>
+			</div>
+			}
+
+			<!-- Consultant -->
+			@if (option.consultant !== null) {
+			<div class="flex flex-col mb-2">
+				<span class="text-sm sm:text-md font-semibold text-gray-800 break-words whitespace-normal">
+					<b>Consultant: </b>
+					@if (option?.consultant?.nom) {
+					{{ option?.consultant?.nom }}
+					}
+					@if (option?.consultant?.prenom) {
+					{{ option?.consultant?.prenom }}
+					}
+				</span>
+			</div>
+			}
+
+			<!-- Responsable Handicap -->
+			@if (option.responsableHandicap !== null) {
+			<div class="flex flex-col mb-2">
+				<span class="text-sm sm:text-md font-semibold text-gray-800 break-words whitespace-normal">
+					<b>Responsable Handicap: </b>
+					@if (option?.responsableHandicap?.nom) {
+					{{ option?.responsableHandicap?.nom }}
+					}
+					@if (option?.responsableHandicap?.prenom) {
+					{{ option?.responsableHandicap?.prenom }}
+					}
+				</span>
+			</div>
+			}
+
+			<!-- Responsable Pédagogique -->
+			@if (option.responsablePedagogique !== null) {
+			<div class="flex flex-col mb-2">
+				<span class="text-sm sm:text-md font-semibold text-gray-800 break-words whitespace-normal">
+					<b>Responsable Pédagogique: </b>
+					@if (option?.responsablePedagogique?.nom) {
+					{{ option?.responsablePedagogique?.nom }}
+					}
+					@if (option?.responsablePedagogique?.prenom) {
+					{{ option?.responsablePedagogique?.prenom }}
+					}
+				</span>
+			</div>
+			}
+
+			<!-- Formateurs -->
+			@if (option.formateurs !== null) {
+			<div class="flex flex-col">
+				<span class="text-sm sm:text-md font-semibold text-gray-800 break-words whitespace-normal">
+					<b>Formateurs: </b>
+					@if (option?.formateurs?.nom) {
+					{{ option?.formateurs?.nom }}
+					}
+					@if (option?.formateurs?.prenom) {
+					{{ option?.formateurs?.prenom }}
+					}
+				</span>
+			</div>
+			}
+		</mat-option>
+	</mat-autocomplete>
+
+</mat-form-field>
+@if ( formControl){
+@if(formControl.invalid && ( formControl.dirty || formControl.touched)){
+<mat-error>
+	<span class="error-message color-red">
+		{{ getErrorMessage() }}
+	</span>
+</mat-error>
+}
+@if (value && value.value && value.value.length < 2 && formControl.touched) { <span class="help-message">
+	La recherche doit contenir au moins 2 caractères, par nom équipe
+	</span>
+	}
+	}
+	<!-- academieAudite_objectId : {{academieAudite_objectId}} -->

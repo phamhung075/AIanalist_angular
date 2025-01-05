@@ -1,0 +1,85 @@
+<div>
+  <h2>Afficher Enquête</h2>
+  @if(questions$S()){
+  <ul>
+    <li *ngFor="let question of questions$S(); let i = index">
+      <div *ngIf="question.type === 'short-answer'">
+        {{ question.question }}
+        <input type="text">
+      </div>
+      <div *ngIf="question.type === 'paragraph'">
+        {{ question.question }}
+        <textarea></textarea>
+      </div>
+      <div *ngIf="question.type === 'multiple-choice'">
+        {{ question.question }}
+        <select>
+          <option *ngFor="let option of question.options">{{ option }}</option>
+        </select>
+      </div>
+      <div *ngIf="question.type === 'checkboxes'">
+        {{ question.question }}
+        <div *ngFor="let option of question.options">
+          <label><input type="checkbox"> {{ option }}</label>
+        </div>
+      </div>
+      <div *ngIf="question.type === 'dropdown'">
+        {{ question.question }}
+        <select>
+          <option *ngFor="let option of question.options">{{ option }}</option>
+        </select>
+      </div>
+      <div *ngIf="question.type === 'linear-scale'">
+        {{ question.question }}
+        <mat-slider [min]="question.scaleMin" [max]="question.scaleMax" step="1" showTickMarks discrete
+          [displayWith]="formatLabel">
+          <input matSliderThumb [value]="question.scaleMin">
+        </mat-slider>
+      </div>
+      <div *ngIf="question.type === 'multiple-choice-grid'">
+        {{ question.question }}
+        <table>
+          <tr>
+            <th></th>
+            <th *ngFor="let col of question.columns">{{ col }}</th>
+          </tr>
+          <tr *ngFor="let row of question.rows">
+            <td>{{ row }}</td>
+            <td *ngFor="let col of question.columns">
+              <input type="radio" name="grid-{{ question.question }}-{{ row }}" value="{{ col }}">
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div *ngIf="question.type === 'checkbox-grid'">
+        {{ question.question }}
+        <table>
+          <tr>
+            <th></th>
+            <th *ngFor="let col of question.columns">{{ col }}</th>
+          </tr>
+          <tr *ngFor="let row of question.rows">
+            <td>{{ row }}</td>
+            <td *ngFor="let col of question.columns">
+              <input type="checkbox" name="grid-{{ question.question }}-{{ row }}" value="{{ col }}">
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div *ngIf="question.type === 'date'">
+        {{ question.question }}
+        <input type="date">
+      </div>
+      <div *ngIf="question.type === 'time'">
+        {{ question.question }}
+        <input type="time">
+      </div>
+      <div *ngIf="question.type === 'yesno'">
+        {{ question.question }}
+        <label><input type="radio" name="yesno-{{ question.question }}" value="yes"> Oui</label>
+        <label><input type="radio" name="yesno-{{ question.question }}" value="no"> Non</label>
+      </div>
+    </li>
+  </ul>
+  }
+</div>

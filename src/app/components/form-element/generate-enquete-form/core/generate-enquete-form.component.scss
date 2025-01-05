@@ -1,0 +1,171 @@
+// Variables
+$primary-color: #3498db;
+$secondary-color: #2ecc71;
+$background-color: #f5f5f5;
+$border-radius: 8px;
+$input-border: 1px solid #ccc;
+$input-padding: 10px;
+
+// General Styles
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: $background-color;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.item-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+// Container
+.container {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  width: 800px;
+  background-color: #fff;
+  border-radius: $border-radius;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+// Left and Right Sections
+.left,
+.right {
+  width: 48%;
+  box-sizing: border-box;
+}
+
+.left {
+  margin-right: 2%;
+}
+
+.right {
+  margin-left: 2%;
+}
+
+// Label Styles
+label {
+  margin-top: 15px;
+  font-weight: bold;
+  color: $primary-color;
+}
+
+// Input and Textarea Styles
+input[type="text"],
+textarea,
+input[type="datetime-local"] {
+  width: 100%;
+  padding: $input-padding;
+  margin-top: 5px;
+  border: $input-border;
+  border-radius: $border-radius;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+
+  &:focus {
+    border-color: $primary-color;
+    outline: none;
+  }
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+// Button Styles
+.save-element {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $primary-color;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: $border-radius;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: darken($primary-color, 10%);
+  }
+
+  &:disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: none;
+
+    &:hover {
+      background-color: #ddd;
+      cursor: not-allowed;
+      opacity: 0.5;
+      pointer-events: none;
+      transition: none;
+    }
+  }
+
+  mat-icon {
+    margin-right: 10px;
+  }
+}
+
+.hidden {
+  display: none;
+}
+
+.sm\\:flex {
+  display: flex;
+
+  &.ml-2 {
+    margin-left: 10px;
+  }
+}
+
+// Responsive Design
+@media (max-width: 500px) {
+  .container {
+    flex-direction: column;
+    width: 100%;
+    padding: 10px;
+  }
+
+  .left,
+  .right {
+    width: 100%;
+    margin: 0 0 10px 0;
+  }
+
+  .save-element {
+    width: 100%;
+    justify-content: center;
+  }
+}

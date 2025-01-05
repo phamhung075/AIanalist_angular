@@ -1,0 +1,171 @@
+<mat-form-field class="w-full mx-auto relative" appearance="fill" subscriptSizing="dynamic" [formGroup]="formGroup">
+	<mat-label>{{ fieldName }}</mat-label>
+	<input matInput type="text" aria-label="contact nom prenom email" [matAutocomplete]="auto"
+		formControlName="{{ controlName }}" autocomplete="off" (blur)="onTouched()" (click)="focus()"
+		(focus)="initFilterOptions()" #value [ngClass]="{ 'hidden-input': canClear(), 'visible-input': !canClear() }" />
+
+	@if (formControl && formControl.enabled && canClear()) {
+	<div class="clear-button">
+		<button (click)="clearInput(value)">
+			<mat-icon>clear</mat-icon>
+		</button>
+	</div>
+	}
+	@if (this.loading) {
+	<mat-spinner matSuffix [diameter]="18" style="float: right; margin-left: 8px; margin-right: 20px"></mat-spinner>
+	}
+
+	@if (formControl && formControl.value && valid()) {
+	@if (formControl.value?.nom) {
+	<div class="card-visite w-full mx-auto overflow-hidden">
+		<div class="flex flex-col md:flex-row items-center md:items-start p-6">
+			<img [src]="formControl.value?.profilePicture?.parseFile?.url ?? '/assets/images/no-profile.png'"
+				alt="Contact Profile Picture"
+				class="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105" />
+			<div class="mt-4 md:mt-0">
+				<p class="font-bold text-sm sm:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+					{{ formControl.value?.nom }} {{ formControl.value?.prenom }}
+				</p>
+				<p class="text-xs sm:text-sm text-blue-500 break-words whitespace-normal">
+					{{ formControl.value?.email }}
+				</p>
+				<p class="font-bold text-sm sm:text-md lg:text-lg text-green-500 break-words whitespace-normal">
+					{{ formControl.value?.numPortable }}
+				</p>
+			</div>
+		</div>
+
+		<div class="professional-categories mb-4">
+			<h3
+				class="font-semibold text-sm sm:text-md md:text-lg mb-3 text-gray-800 transition-transform duration-500 hover:translate-y-1 hover:text-indigo-600">
+				Catégories professionnelles :
+			</h3>
+			<ul class="flex flex-wrap -m-1">
+				@for (category of formControl.value.categorieContact; track category) {
+				<li
+					class="bg-indigo-100 text-indigo-800 rounded-full px-4 py-2 text-xs md:text-sm font-semibold m-1 transition-transform duration-300 hover:scale-105">
+					{{ category }}
+				</li>
+				}
+			</ul>
+		</div>
+
+		<div class="border-t border-gray-200 w-full md:w-1/2 p-4">
+			<p class="text-xs sm:text-sm md:text-base text-gray-800 font-semibold pt-4 break-words whitespace-normal">
+				@if (formControl.value.academieAudite?.denominationSociale) {
+				{{ formControl.value.academieAudite.denominationSociale }}
+				}
+			</p>
+			<p class="text-xs sm:text-sm md:text-base text-gray-600 break-words whitespace-normal">
+				@if (formControl.value.academieAudite?.adresse) {
+				{{ formControl.value.academieAudite.adresse }}
+				}
+				@if (formControl.value.academieAudite?.codePostal) {
+				{{ formControl.value.academieAudite.codePostal }}
+				}
+				@if (formControl.value.academieAudite?.ville) {
+				{{ formControl.value.academieAudite.ville }}
+				}
+			</p>
+		</div>
+	</div>
+	}
+	}
+
+	<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onOptionSelected($event)">
+		@if (disableCreateContact === false) {
+		<mat-option *ngIf="!value.value" (click)="openDialogCreate()">
+			<div class="option-content text-xs sm:text-sm md:text-base">
+				<mat-icon>add</mat-icon>
+				<b>Création Nouveau Contact {{ fieldName }}</b>
+			</div>
+		</mat-option>
+		}
+
+		<mat-option class="border border-t p-2 w-full" *ngFor="let option of filteredOptions | async" [value]="option">
+			@if (option !== null && option !== undefined) {
+			<div class="card-visite w-full mx-auto overflow-hidden">
+				<div class="flex flex-col md:flex-row items-center md:items-start p-6">
+					<img [src]="option.profilePicture?.parseFile?.url ?? '/assets/images/no-profile.png'"
+						alt="Contact Profile Picture"
+						class="w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105" />
+					<div class="mt-4 md:mt-0">
+						<p class="font-bold text-sm sm:text-md lg:text-lg text-gray-800 break-words whitespace-normal">
+							{{ option.nom }} {{ option.prenom }}
+						</p>
+						<p class="text-xs sm:text-sm text-blue-500 break-words whitespace-normal">
+							{{ option.email }}
+						</p>
+						<p class="font-bold text-sm sm:text-md lg:text-lg text-green-500 break-words whitespace-normal">
+							{{ option.numPortable }}
+						</p>
+					</div>
+				</div>
+
+				<div class="professional-categories mb-4">
+					<h3
+						class="font-semibold text-sm sm:text-md md:text-lg mb-3 text-gray-800 transition-transform duration-500 hover:translate-y-1 hover:text-indigo-600">
+						Catégories professionnelles :
+					</h3>
+					<ul class="flex flex-wrap -m-1">
+						@for (category of option.categorieContact; track category) {
+						<li
+							class="bg-indigo-100 text-indigo-800 rounded-full px-4 py-2 text-xs md:text-sm font-semibold m-1 transition-transform duration-300 hover:scale-105">
+							{{ category }}
+						</li>
+						}
+					</ul>
+				</div>
+
+				<div class="border-t border-gray-200 w-full md:w-1/2 p-4">
+					<p
+						class="text-xs sm:text-sm md:text-base text-gray-800 font-semibold pt-4 break-words whitespace-normal">
+						@if (option.academieAudite?.denominationSociale) {
+						{{ option.academieAudite?.denominationSociale }}
+						}
+					</p>
+					<p class="text-xs sm:text-sm md:text-base text-gray-600 break-words whitespace-normal">
+						@if (option.academieAudite?.adresse) {
+						{{ option.academieAudite?.adresse }}
+						}
+						@if (option.academieAudite?.codePostal) {
+						{{ option.academieAudite?.codePostal }}
+						}
+						@if (option.academieAudite?.ville) {
+						{{ option.academieAudite?.ville }}
+						}
+					</p>
+				</div>
+			</div>
+			}
+		</mat-option>
+	</mat-autocomplete>
+</mat-form-field>
+
+@if (formControl) {
+@if (formControl.invalid && (formControl.dirty || formControl.touched)) {
+<mat-error>
+	<span class="error-message text-xs sm:text-sm md:text-base text-red-500 break-words whitespace-normal">
+		{{ getErrorMessage() }}
+	</span>
+</mat-error>
+}
+@if (value && value.value && value.value.length < 2 && formControl.touched) { <span
+	class="help-message text-xs sm:text-sm md:text-base text-gray-500 break-words whitespace-normal">
+	La recherche doit contenir au moins 2 caractères, par nom prenom email
+	</span>
+	}
+	}
+
+	@if (_testView) {
+	@if (formControl?.value) {
+	<pre class="text-xs sm:text-sm md:text-base text-gray-700 break-words whitespace-normal">
+	{{ formControl.value | json }}
+  </pre>
+	}
+	@if (profilePicture()) {
+	<pre class="text-xs sm:text-sm md:text-base text-gray-700 break-words whitespace-normal">
+	profilePicture: {{ profilePicture() }}
+  </pre>
+	}
+	}

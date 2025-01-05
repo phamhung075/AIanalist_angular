@@ -1,0 +1,52 @@
+<mat-form-field class="w-full mx-auto" appearance="fill" subscriptSizing="dynamic" [formGroup]="formGroup">
+	<mat-label>{{fieldName}}</mat-label>
+	<input matInput type="text" placeholder="Recherche par nom" aria-label="Dénomination sociale"
+		[matAutocomplete]="auto" formControlName="{{controlName}}" autocomplete="off" (blur)="onTouched()"
+		(focus)="initFilterOptions()" (click)="focus()" #value
+		[ngClass]="{'hidden-input': canClear(), 'visible-input': !canClear()}">
+
+	@if(formControl && formControl.enabled && canClear()) {
+	<div class="clear-button">
+		<button (click)="clearInput(value)">
+			<mat-icon>clear</mat-icon>
+		</button>
+	</div>
+	}
+	@if (this.loading) {
+	<mat-spinner matSuffix [diameter]="18"></mat-spinner>
+	}
+	@if (formControl && formControl.value && valid()) {
+	<div class="custom-display">
+		<span class="box box1">{{ formControl.value.titre }}</span>
+	</div>
+	}
+
+	<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onOptionSelected($event)">
+
+		<mat-option class="border border-t p-4" *ngFor="let option of filteredOptions | async" [value]="option">
+			<span class="box box1">{{option.titre}}</span>
+		</mat-option>
+
+		<!-- <mat-option class="border border-t p-4" *ngFor="let option of filteredOptions | async" [value]="option">
+      <span class="box box1">{{option.numeroDossier}}</span> -
+      <span class="box box2">{{option.statut}}</span>:
+      <span class="box box3">{{option.type}}</span> <br>
+      <span class="box box4">{{option.academieAudite?.denominationSociale}}</span>
+    </mat-option> -->
+
+	</mat-autocomplete>
+</mat-form-field>
+@if ( formControl){
+@if(formControl.invalid && ( formControl.dirty || formControl.touched)){
+<mat-error>
+	<span class="error-message color-red">
+		{{ getErrorMessage() }}
+	</span>
+</mat-error>
+}
+@if (value && value.value && value.value.length < 2 && formControl.touched) { <span class="help-message">
+	La recherche doit contenir au moins 2 caractères
+	</span>
+	}
+	}
+	<!-- academieAudite_objectId : {{academieAudite_objectId}} -->

@@ -1,0 +1,58 @@
+<h2>Créer Enquête</h2>
+<div>
+  <div>
+    <label>Type de Question :</label>
+    <select [(ngModel)]="currentQuestion.type">
+      <option value="short-answer">Réponse courte</option>
+      <option value="paragraph">Paragraphe</option>
+      <option value="multiple-choice">Choix multiple</option>
+      <option value="checkboxes">Cases à cocher</option>
+      <option value="dropdown">Menu déroulant</option>
+      <option value="linear-scale">Échelle linéaire</option>
+      <option value="multiple-choice-grid">Grille de choix multiples</option>
+      <option value="checkbox-grid">Grille de cases à cocher</option>
+      <option value="date">Date</option>
+      <option value="time">Heure</option>
+      <option value="yesno">Oui/Non</option>
+    </select>
+  </div>
+  <div class="w-full mx-auto border border-1 mt-5">
+    <label>Question :</label>
+    <input class="input w-full mx-auto border border-1" [(ngModel)]="currentQuestion.question"
+      placeholder="Entrez votre question">
+  </div>
+  <div class="w-full mx-auto border border-1 mt-2"
+    *ngIf="currentQuestion.type === 'multiple-choice' || currentQuestion.type === 'checkboxes' || currentQuestion.type === 'dropdown'">
+    <label>Options :</label>
+    <input #optionInput placeholder="Entrez une option" class="input w-full mx-auto border border-1">
+    <button (click)="addOption(optionInput.value); optionInput.value=''">Ajouter une option</button>
+    <ul>
+      <li *ngFor="let option of currentQuestion.options">{{ option }}</li>
+    </ul>
+  </div>
+  <div *ngIf="currentQuestion.type === 'linear-scale'" class="mt-2">
+    <label>Échelle de (min:0, max: 100) :</label>
+    <input type="number" [(ngModel)]="currentQuestion.scaleMin" min="0" max="100">
+    <label>à</label>
+    <input type="number" [(ngModel)]="currentQuestion.scaleMax" min="1" max="100">
+  </div>
+  <div *ngIf="currentQuestion.type === 'multiple-choice-grid' || currentQuestion.type === 'checkbox-grid'">
+    <label>Lignes :</label>
+    <input #rowInput placeholder="Entrez une ligne" class="input w-full mx-auto border border-1">
+    <button (click)="addRow(rowInput.value); rowInput.value=''">Ajouter une ligne</button>
+    <ul>
+      <li *ngFor="let row of currentQuestion.rows">{{ row }}</li>
+    </ul>
+    <label>Colonnes :</label>
+    <input #colInput placeholder="Entrez une colonne" class="input w-full mx-auto border border-1">
+    <button (click)="addColumn(colInput.value); colInput.value=''">Ajouter une colonne</button>
+    <ul>
+      <li *ngFor="let column of currentQuestion.columns">{{ column }}</li>
+    </ul>
+  </div>
+  <button mat-fab class="create-element flex flex-row justify-center items-center mt-10" extended
+    (click)="addQuestion()">
+    <mat-icon>add_box</mat-icon>
+    <div class="hidden sm:flex ml-2">Ajouter une question</div>
+  </button>
+</div>

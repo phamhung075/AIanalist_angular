@@ -1,0 +1,193 @@
+<div class="container w-full mx-auto ">
+  @if(isLoading$S()){
+  <div class="loading-overlay absolute inset-0 flex items-center justify-center opacity-50 bg-slate-100 bg-opacity-25">
+    <mat-spinner></mat-spinner>
+  </div>
+  }
+  <form [formGroup]="form">
+    <div #expandedRow
+      class="modal-form relative mx-auto flex flex-col justify-center items-center sm:p-0 md:p-5 w-full">
+
+      <div
+        class="card-visite backdrop-blur-sm	 w-full md:w-2/3 lg:w-2/5 bg-white shadow-lg rounded-lg pt-6 pl-6 mx-auto hover:shadow-xl transform transition duration-500 ease-in-out mb-10">
+        <div class="flex items-center mb-4">
+          <img [src]="profilePicture()" alt="Profile"
+            class="w-24 h-24 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105">
+          <div>
+            @if(form.get('nom')?.value){<p class="font-bold text-lg text-gray-800">{{ form.get('nom')?.value }} {{
+              form.get('prenom')?.value }}</p>}
+            @if(form.get('email')?.value){<p class="text-sm text-blue-500">{{ form.get('email')?.value }}</p>}
+            @if(form.get('numPortable')?.value){<p class="font-bold text-lg text-green-500">{{
+              form.get('numPortable')?.value }}</p>}
+            @if(form.get('entreprise')?.value?.denominationSociale){<p class="text-sm text-gray-600 mt-1">{{
+              form.get('entreprise')?.value?.denominationSociale }}</p>}
+          </div>
+        </div>
+        @if (form.get('categorieContact')?.value){
+        <div class="professional-categories mb-6">
+          <h3
+            class="font-semibold text-sm mb-3 text-gray-800 transition-transform duration-500 hover:translate-y-1 hover:text-indigo-600">
+            Catégories professionnelles :</h3>
+          <ul class="flex flex-wrap -m-1">
+            @for (category of form.get('categorieContact')?.value; track category) {
+            <li
+              class="bg-indigo-100 text-indigo-800 rounded-full px-4 py-2 text-xs font-semibold m-1 transition-transform duration-300 hover:scale-105">
+              {{ category }}</li>
+            }
+          </ul>
+        </div>
+        }
+        @if (form.get('academieAudite')?.value){
+
+        <div class="border-t border-gray-200 pt-4 mt-4">
+          @if(form.get('academieAudite')?.value?.denominationSociale){<p class="text-gray-800 font-semibold text-sm">{{
+            form.get('academieAudite')?.value?.denominationSociale }}</p>}
+          @if(form.get('academieAudite')?.value?.adresse){<p class="text-xs text-gray-600">{{
+            form.get('academieAudite')?.value?.adresse }} {{
+            form.get('academieAudite')?.value?.codePostal }} {{ form.get('academieAudite')?.value?.ville }}</p>}
+        </div>
+        }
+      </div>
+      <mat-card [ngClass]="{
+                  'mat-card-active': _isEdit === true,
+                  'mat-card-inactive': _isEdit === false
+                  }" class="w-full items-center">
+        <mat-card-content class="flex flex-col w-full">
+          <div class="w-full container">
+            <!-- Logo and Fields Section -->
+            <div
+              class="w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-x-1 gap-y-2 sm:gap-x-2 sm:gap-y-4 md:gap-x-3 md:gap-y-6 lg:gap-x-5 lg:gap-y-10 items-center justify-center">
+              <!-- Logo -->
+              <div class="md:col-span-1 flex justify-center md:justify-center">
+                <img alt="Logo"
+                  class="w-24 h-24 aspect-square rounded-full border-2 border-stone-300 drop-shadow-md transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110 duration-300 "
+                  (click)="fileInput.click()" [class.disabled-effect]="!_isEdit" [style.opacity]="_isEdit ? '0.7' : '1'"
+                  [src]="profilePicture()" />
+                <input type="file" #fileInput class="justify-center items-center" style="display: none"
+                  (change)="_changeProfilePicture($event, profilePicture)" />
+              </div>
+
+
+              <div
+                class="md:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-x-1 gap-y-2 sm:gap-x-2 sm:gap-y-4 md:gap-x-3 md:gap-y-6 lg:gap-x-5 lg:gap-y-10">
+
+
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Sections with 3-2-1 Column Layout -->
+          <div
+            class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-1 gap-y-2 sm:gap-x-2 sm:gap-y-4 md:gap-x-3 md:gap-y-6 lg:gap-x-5 lg:gap-y-10 mt-5">
+            @if(form.get('categorieContact')?.value!){
+            <FIELD_generic-mat-select [formGroup]="form" controlName="categorieContact" label="Catégorie Contact"
+              [removeThisIfExistOther]="removeThisIfExistOther" [options]="categoriesContactModifiableList_IOption"
+              [multiple]="true"></FIELD_generic-mat-select>
+            }
+            <FIELD_autocomplete--academie-audite controlName="academieAudite" fieldName="Académie audité"
+              [formGroup]="form">
+            </FIELD_autocomplete--academie-audite>
+
+            <FIELD_autocomplete--entreprise controlName="entreprise" fieldName="Entreprise" [formGroup]="form"
+              [academieAudite_objectId]="selectAcademieAuditeObjectId()">
+            </FIELD_autocomplete--entreprise>
+
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="nom" label="Nom"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="prenom" label="Prenom"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-select [formGroup]="form" controlName="genre" label="Genre"
+              [options]="_convertStringArrayToIOptions(['Homme', 'Femme', 'Autre'])"></FIELD_generic-mat-select>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="email" label="Email"
+              [(initialValue)]="initialEmailValue" type="email"
+              asyncValidatorName="emailExists"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="numPortable" label="Numéro Portable" type="text"
+              formatter="formatPhoneNumber"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="dateRencontre" label="Date de rencontre"
+              type="date"></FIELD_generic-mat-input>
+
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <h2 class="mt-10 mb-5 font-semibold">Adresse</h2>
+      <mat-card [ngClass]="{
+                    'mat-card-active': _isEdit === true,
+                    'mat-card-inactive': _isEdit === false
+                    }" class="w-full mx-auto justify-center items-center">
+        <mat-card-content class="mx-auto flex flex-col w-full">
+          <div
+            class="mt-2 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-1 gap-y-2 sm:gap-x-2 sm:gap-y-4 md:gap-x-3 md:gap-y-6 lg:gap-x-5 lg:gap-y-10">
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="adresse" label="Adresse"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="codePostal" label="Code Postal" type="text"
+              formatter="formatPostalCode"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="ville" label="Ville"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="region" label="Région"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="pays" label="Pays"
+              type="text"></FIELD_generic-mat-input>
+
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <h2 class="mt-10 mb-5 font-semibold">Nationalité & Naissance</h2>
+      <mat-card [ngClass]="{
+                    'mat-card-active': _isEdit === true,
+                    'mat-card-inactive': _isEdit === false
+                    }" class="w-full mx-auto justify-center items-center">
+        <mat-card-content class="mx-auto flex flex-col w-full">
+          <div
+            class="mt-2 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-1 gap-y-2 sm:gap-x-2 sm:gap-y-4 md:gap-x-3 md:gap-y-6 lg:gap-x-5 lg:gap-y-10">
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="nationalite" label="Nationalité"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="dateNaissance" label="Date Naissance"
+              type="date"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="adresseNaissance" label="Adresse Naissance"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="villeNaissance" label="Ville Naissance"
+              type="text"></FIELD_generic-mat-input>
+
+            <FIELD_generic-mat-input [formGroup]="form" controlName="paysNaissance" label="Pays Naissance"
+              type="text"></FIELD_generic-mat-input>
+
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+
+    </div>
+
+  </form>
+
+
+
+  <div #expandedRow class="actions-list flex flex-row justify-center items-center p-4">
+    <button class="m-2 edit-button" *ngIf="!_isEdit" mat-raised-button color="primary"
+      (click)="_editMode(excepts)">Modifier</button>
+    <button class="m-2 cancel-button" *ngIf="_isEdit" mat-raised-button color="basic"
+      (click)="_annule(excepts)">Annuler</button>
+    <button class="m-2 save-button" *ngIf="_isEdit" mat-raised-button [disabled]="form.invalid" color="primary"
+      (click)="save()">Enregistrer</button>
+  </div>
+  <div class="h-24"></div>
+
+</div>

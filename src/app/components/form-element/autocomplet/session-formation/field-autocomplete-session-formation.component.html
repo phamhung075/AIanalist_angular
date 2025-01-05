@@ -1,0 +1,39 @@
+<div class="form-field-with-icon">
+	<mat-form-field class="w-full mx-auto" appearance="fill" subscriptSizing="dynamic" [formGroup]="formGroup">
+		<mat-label>{{fieldName}}</mat-label>
+		<input matInput type="text" placeholder="Recherche par nom de session de formation"
+			aria-label="Session de formation" [matAutocomplete]="auto" formControlName="{{controlName}}"
+			autocomplete="off" (click)="focus()" (blur)="onTouched()" (focus)="initFilterOptions()" #value
+			[ngClass]="{'hidden-input': canClear(), 'visible-input': !canClear()}">
+
+
+		@if(formControl && formControl.enabled && canClear()) {
+		<div class="clear-button">
+			<button (click)="clearInput(value)">
+				<mat-icon>clear</mat-icon>
+			</button>
+		</div>
+		}
+		<mat-spinner matSuffix [diameter]="18" *ngIf="loading"></mat-spinner>
+
+		<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onOptionSelected($event)">
+			<mat-option *ngFor="let option of filteredOptions | async" [value]="option">
+				{{ option.sessionFormation }} <!-- Assumant que 'sessionFormation' est la propriété à afficher -->
+			</mat-option>
+		</mat-autocomplete>
+	</mat-form-field>
+
+	<a class="google-map-url" (click)="openGoogleMaps()" tabindex="0" style="cursor: pointer;">
+		<mat-icon>location_on</mat-icon>
+	</a>
+</div>
+
+<mat-error *ngIf="formControl.invalid && (formControl.dirty || formControl.touched)">
+	<span class="error-message color-red">
+		{{ getErrorMessage() }}
+	</span>
+</mat-error>
+
+<span class="help-message" *ngIf="value && value.value && value.value.length < 2 && formControl.touched">
+	La recherche doit contenir au moins 2 caractères
+</span>

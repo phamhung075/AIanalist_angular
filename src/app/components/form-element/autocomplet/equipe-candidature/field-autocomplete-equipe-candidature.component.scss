@@ -1,0 +1,8 @@
+@use '../../../scss/autocomplete.scss';
+@use '../../../styles/tailwind.scss';
+
+img.profile-image {
+  width: 6rem !important;
+  object-fit: cover;
+  /* This ensures the image keeps its aspect ratio and fills the space */
+}

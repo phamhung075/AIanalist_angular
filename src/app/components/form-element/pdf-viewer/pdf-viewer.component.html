@@ -1,0 +1,77 @@
+<div class="pdf-container relative w-full mx-auto">
+	@if (isPdf(currentDocumentUrl())) {
+		<div
+			class="flex flex-col sm:flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 p-2">
+			<div class="flex w-64 space-x-2">
+				<input #searchInput type="text" placeholder="Rechercher..."
+					class="flex-1 h-10 text-md border border-gray-300 rounded" />
+				<button class="h-10 px-3 bg-blue-500 text-white rounded hover:bg-blue-600" 
+					(click)="search(searchInput.value)">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="11" cy="11" r="8"></circle>
+						<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+					</svg>
+				</button>
+			</div>
+
+			<div class="flex items-center space-x-2" >
+				<button class="h-10 px-4 text-md bg-blue-500 text-white rounded hover:bg-blue-600" mat-raised-button
+					color="primary" (click)="onZoomIn()" >
+					Zoom In
+				</button>
+				<span class="text-md">
+					{{ zoom() * 100 | number:'1.0-0' }}%
+				</span>
+				<button class="h-10 px-4 text-md bg-blue-500 text-white rounded hover:bg-blue-600" mat-raised-button
+					color="primary" (click)="onZoomOut()" >
+					Zoom Out
+				</button>
+			</div>
+		</div>
+		@if(!isLoaded) {
+			<div class="loading-overlay absolute inset-0 flex items-center justify-center ">
+				<mat-spinner></mat-spinner>
+			</div>
+		} 
+
+		
+				<div #pdfDiv class="w-[100%] mx-auto" >
+					<pdf-viewer
+					#pdfContainer
+					class="pdf-viewer w-full mx-auto"
+					[src]="currentDocumentUrl()"
+					[zoom]="zoom()"
+					[fit-to-page]="fitToPage"
+					[show-all]="showAll"
+					[render-text]="renderText"
+					[autoresize]="autoResize()"
+					[original-size]="!autoResize()"
+					(after-load-complete)="onPdfLoad($event)"
+					(error)="onError($event)"
+					(page-rendered)="onPageRendered($event)"
+					(on-progress)="onProgress($event)"
+					style="
+					display: flex;
+					justify-content: center;
+					width: 90%;
+					height: 90vh;
+					max-width: 90vw;
+					background-color: #ddeee9;
+					"
+					></pdf-viewer>
+				</div>
+		
+		
+	} @else if (isMicrosoftDocx() && getSafeDocUrl()) {
+		<iframe [src]="safeDocxUrl" class="doc-preview w-full mx-auto" frameborder="0" style="width: 90%; height: 90vh;">
+		</iframe>
+	}
+
+	@else if (isImage()) {
+
+		<img class="mx-auto w-[80%] img-preview" [src]="currentDocumentUrl()" alt="image"
+			style="max-width: 100%; max-height: 90vh; display: block;" />
+
+	}
+</div>

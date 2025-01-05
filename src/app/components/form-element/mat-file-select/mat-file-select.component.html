@@ -1,0 +1,448 @@
+<div class="w-full mx-auto">
+	<!-- isEdit: {{_isEdit}} -->
+	<div>
+		<input type="file" [attr.accept]="allowedTypes.join(',')" (change)="onFilesSelected($event)" #fileInput multiple
+			style="display: none;">
+		<button *ngIf="(formGroup || formGroupInit) && _isEdit" class="mx-auto" mat-raised-button type="button"
+			color="primary" (click)="triggerFileInput()">Ajouter {{label}}</button>
+	</div>
+
+
+
+	<div *ngIf="filesLength$S() > 0" class="w-full mx-auto">
+		<!-- Unsigned documents -->
+		<div *ngIf="hasUnsignedFiles()">
+			<h2 class="text-lg font-bold">Documents non signés</h2>
+			<div class="max-w-full">
+				<!-- File List Container -->
+				<div class="max-w-full p-6 bg-gray-50">
+					<!-- File List Container -->
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+						<div *ngFor="let fileWrapper of filterFilesBySignedStatus(false); let i = index"
+							class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 relative group overflow-hidden">
+
+							<!-- File Header with gradient background -->
+							<div
+								class="flex items-center p-3 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+								<div class="flex-shrink-0 mr-3">
+									<a [href]="fileWrapper.uploadedUrl" target="_blank" rel="noopener noreferrer">
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'image')"
+											class="text-blue-500 shadow-sm">image</mat-icon>
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'pdf')"
+											class="text-red-500 shadow-sm">picture_as_pdf</mat-icon>
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'text')"
+											class="text-gray-500 shadow-sm">description</mat-icon>
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'word')"
+											class="text-blue-600 shadow-sm">article</mat-icon>
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'spreadsheet')"
+											class="text-green-600 shadow-sm">table_chart</mat-icon>
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'presentation')"
+											class="text-orange-500 shadow-sm">slideshow</mat-icon>
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'video')"
+											class="text-purple-500 shadow-sm">videocam</mat-icon>
+										<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'other')"
+											class="text-gray-500 shadow-sm">attach_file</mat-icon>
+									</a>
+								</div>
+								<div class="min-w-0 flex-1">
+									<!-- Category first, larger and more prominent -->
+									<div *ngIf="fileWrapper.categorie"
+										class="text-sm font-semibold text-blue-600 mb-1 truncate">
+										{{ fileWrapper.categorie }}
+									</div>
+									<!-- Filename second, smaller -->
+									<p class="text-xs text-gray-600 truncate" [title]="fileWrapper.name">
+										{{ fileWrapper.name! }}
+									</p>
+								</div>
+
+								<!-- Signed Status Icon -->
+								<div class="mr-2" *ngIf="fileWrapper.isSigned !== undefined">
+									<mat-icon *ngIf="fileWrapper.isSigned" class="text-green-500 "
+										matTooltip="Document signé">task_alt</mat-icon>
+									<mat-icon *ngIf="fileWrapper.isSigned === false" class="text-amber-500 "
+										matTooltip="Document non signé">radio_button_unchecked</mat-icon>
+								</div>
+
+								<!-- Quick Actions -->
+								<div
+									class="flex items-center space-x-1 opacity-20 group-hover:opacity-100 transition-opacity">
+									<button *ngIf="(formGroup || formGroupInit) && _isEdit"
+										(click)="deleteFile(i, undefined)"
+										class="p-1 text-gray-500 hover:text-red-600 rounded-full hover:bg-gray-100 shadow-sm"
+										type="button">
+										<mat-icon class="">delete</mat-icon>
+									</button>
+									<button
+										*ngIf="fileWrapper.uploadedUrl && (isImage(fileWrapper.uploadedUrl) || isMicrosoftDocx(fileWrapper.uploadedUrl) || isPdf(fileWrapper.uploadedUrl))"
+										(click)="viewFile(fileWrapper.uploadedUrl)"
+										class="p-1 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100 shadow-sm"
+										type="button">
+										<mat-icon class="">pageview</mat-icon>
+									</button>
+								</div>
+							</div>
+
+							<!-- File Details with subtle borders -->
+							<div class="p-3 text-xs space-y-2 bg-white">
+								<!-- File Info -->
+								<div class="grid grid-cols-2 gap-2 items-center">
+									<div *ngIf="fileWrapper.size" class="text-gray-500 bg-gray-50 px-2 py-1 rounded">
+										{{ fileWrapper.size! / 1024 / 1024 | number: '1.2-2' }} MB
+									</div>
+									<div class="text-right">
+										<span [ngClass]="{
+								'px-2 py-0.5 rounded-full text-xs shadow-sm': true,
+								'bg-gray-100 text-gray-600': fileWrapper.status === 'not-uploaded',
+								'bg-blue-100 text-blue-600': fileWrapper.status === 'uploading',
+								'bg-yellow-100 text-yellow-600': fileWrapper.status === 'deleting',
+								'bg-green-100 text-green-600': fileWrapper.status === 'success',
+								'bg-red-100 text-red-600': fileWrapper.status === 'error' || fileWrapper.status === 'delete-error'
+							  }">
+											{{ fileWrapper.status }}
+										</span>
+									</div>
+								</div>
+
+								<!-- Creator Info -->
+								<div *ngIf="fileWrapper.contactCreator?.nom"
+									class="text-gray-600 border-t border-gray-100 pt-2">
+									<div class="flex justify-between">
+										<span class="text-gray-400">Créé par:</span>
+										<span class="font-medium">{{ fileWrapper.contactCreator?.nom }} {{
+											fileWrapper.contactCreator?.prenom }}</span>
+									</div>
+									<div *ngIf="fileWrapper.contactCreator?.email"
+										class="text-gray-400 truncate mt-0.5">
+										{{ fileWrapper.contactCreator?.email }}
+									</div>
+								</div>
+
+								<!-- Academy Info -->
+								<div *ngIf="fileWrapper.academieCreator?.denominationSociale"
+									class="text-gray-600 border-t border-gray-100 pt-2">
+									<div class="truncate font-medium">
+										{{ fileWrapper.academieCreator?.denominationSociale }} - {{
+										fileWrapper.academieCreator?.codePostal }}
+									</div>
+									<div *ngIf="fileWrapper.academieCreator?.mailSociete"
+										class="text-gray-400 truncate mt-0.5">
+										{{ fileWrapper.academieCreator?.mailSociete }}
+									</div>
+								</div>
+
+								<!-- Dates -->
+								<div class="text-gray-500 border-t border-gray-100 pt-2">
+									<div class="grid grid-cols-2 gap-4">
+										<div class="bg-gray-50 p-2 rounded">
+											<div class="text-gray-400 text-xs">Créé:</div>
+											<div class="font-medium">{{ fileWrapper.createdAt | date:'short' }}</div>
+										</div>
+										<div class="bg-gray-50 p-2 rounded">
+											<div class="text-gray-400 text-xs">Modifié:</div>
+											<div class="font-medium">{{ fileWrapper.updatedAt | date:'short' }}</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Signed documents -->
+		<div *ngIf="hasSignedFiles()">
+			<h2 class="text-lg font-bold">Documents signés</h2>
+
+			<div class="max-w-full p-6 bg-gray-50">
+				<!-- File List Container -->
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+					<div *ngFor="let fileWrapper of filterFilesBySignedStatus(true); let i = index"
+						class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 relative group overflow-hidden">
+
+						<!-- File Header with gradient background -->
+						<div
+							class="flex items-center p-3 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+							<div class="flex-shrink-0 mr-3">
+								<a [href]="fileWrapper.uploadedUrl" target="_blank" rel="noopener noreferrer">
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'image')"
+										class="text-blue-500 shadow-sm">image</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'pdf')"
+										class="text-red-500 shadow-sm">picture_as_pdf</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'text')"
+										class="text-gray-500 shadow-sm">description</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'word')"
+										class="text-blue-600 shadow-sm">article</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'spreadsheet')"
+										class="text-green-600 shadow-sm">table_chart</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'presentation')"
+										class="text-orange-500 shadow-sm">slideshow</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'video')"
+										class="text-purple-500 shadow-sm">videocam</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'other')"
+										class="text-gray-500 shadow-sm">attach_file</mat-icon>
+								</a>
+							</div>
+							<div class="min-w-0 flex-1">
+								<!-- Category first, larger and more prominent -->
+								<div *ngIf="fileWrapper.categorie"
+									class="text-sm font-semibold text-blue-600 mb-1 truncate">
+									{{ fileWrapper.categorie }}
+								</div>
+								<!-- Filename second, smaller -->
+								<p class="text-xs text-gray-600 truncate" [title]="fileWrapper.name">
+									{{ fileWrapper.name! }}
+								</p>
+							</div>
+
+							<!-- Signed Status Icon -->
+							<div class="mr-2" *ngIf="fileWrapper.isSigned !== undefined">
+								<mat-icon *ngIf="fileWrapper.isSigned" class="text-green-500 "
+									matTooltip="Document signé">task_alt</mat-icon>
+								<mat-icon *ngIf="fileWrapper.isSigned === false" class="text-amber-500 "
+									matTooltip="Document non signé">radio_button_unchecked</mat-icon>
+							</div>
+
+							<!-- Quick Actions -->
+							<div
+								class="flex items-center space-x-1 opacity-20 group-hover:opacity-100 transition-opacity">
+								<button *ngIf="(formGroup || formGroupInit) && _isEdit"
+									(click)="deleteFile(i, undefined)"
+									class="p-1 text-gray-500 hover:text-red-600 rounded-full hover:bg-gray-100 shadow-sm"
+									type="button">
+									<mat-icon class="">delete</mat-icon>
+								</button>
+								<button
+									*ngIf="fileWrapper.uploadedUrl && (isImage(fileWrapper.uploadedUrl) || isMicrosoftDocx(fileWrapper.uploadedUrl) || isPdf(fileWrapper.uploadedUrl))"
+									(click)="viewFile(fileWrapper.uploadedUrl)"
+									class="p-1 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100 shadow-sm"
+									type="button">
+									<mat-icon class="">pageview</mat-icon>
+								</button>
+							</div>
+						</div>
+
+						<!-- File Details with subtle borders -->
+						<div class="p-3 text-xs space-y-2 bg-white">
+							<!-- File Info -->
+							<div class="grid grid-cols-2 gap-2 items-center">
+								<div *ngIf="fileWrapper.size" class="text-gray-500 bg-gray-50 px-2 py-1 rounded">
+									{{ fileWrapper.size! / 1024 / 1024 | number: '1.2-2' }} MB
+								</div>
+								<div class="text-right">
+									<span [ngClass]="{
+							'px-2 py-0.5 rounded-full text-xs shadow-sm': true,
+							'bg-gray-100 text-gray-600': fileWrapper.status === 'not-uploaded',
+							'bg-blue-100 text-blue-600': fileWrapper.status === 'uploading',
+							'bg-yellow-100 text-yellow-600': fileWrapper.status === 'deleting',
+							'bg-green-100 text-green-600': fileWrapper.status === 'success',
+							'bg-red-100 text-red-600': fileWrapper.status === 'error' || fileWrapper.status === 'delete-error'
+						  }">
+										{{ fileWrapper.status }}
+									</span>
+								</div>
+							</div>
+
+							<!-- Creator Info -->
+							<div *ngIf="fileWrapper.contactCreator?.nom"
+								class="text-gray-600 border-t border-gray-100 pt-2">
+								<div class="flex justify-between">
+									<span class="text-gray-400">Créé par:</span>
+									<span class="font-medium">{{ fileWrapper.contactCreator?.nom }} {{
+										fileWrapper.contactCreator?.prenom }}</span>
+								</div>
+								<div *ngIf="fileWrapper.contactCreator?.email" class="text-gray-400 truncate mt-0.5">
+									{{ fileWrapper.contactCreator?.email }}
+								</div>
+							</div>
+
+							<!-- Academy Info -->
+							<div *ngIf="fileWrapper.academieCreator?.denominationSociale"
+								class="text-gray-600 border-t border-gray-100 pt-2">
+								<div class="truncate font-medium">
+									{{ fileWrapper.academieCreator?.denominationSociale }} - {{
+									fileWrapper.academieCreator?.codePostal }}
+								</div>
+								<div *ngIf="fileWrapper.academieCreator?.mailSociete"
+									class="text-gray-400 truncate mt-0.5">
+									{{ fileWrapper.academieCreator?.mailSociete }}
+								</div>
+							</div>
+
+							<!-- Dates -->
+							<div class="text-gray-500 border-t border-gray-100 pt-2">
+								<div class="grid grid-cols-2 gap-4">
+									<div class="bg-gray-50 p-2 rounded">
+										<div class="text-gray-400 text-xs">Créé:</div>
+										<div class="font-medium">{{ fileWrapper.createdAt | date:'short' }}</div>
+									</div>
+									<div class="bg-gray-50 p-2 rounded">
+										<div class="text-gray-400 text-xs">Modifié:</div>
+										<div class="font-medium">{{ fileWrapper.updatedAt | date:'short' }}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Documents with undefined signed status -->
+		<div class="max-w-full">
+			<!-- File List Container -->
+			<div class="max-w-full p-6 bg-gray-50">
+				<!-- File List Container -->
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+					<div *ngFor="let fileWrapper of filterFilesBySignedStatus(undefined); let i = index"
+						class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 relative group overflow-hidden">
+
+						<!-- File Header with gradient background -->
+						<div
+							class="flex items-center p-3 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+							<div class="flex-shrink-0 mr-3">
+								<a [href]="fileWrapper.uploadedUrl" target="_blank" rel="noopener noreferrer">
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'image')"
+										class="text-blue-500 shadow-sm">image</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'pdf')"
+										class="text-red-500 shadow-sm">picture_as_pdf</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'text')"
+										class="text-gray-500 shadow-sm">description</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'word')"
+										class="text-blue-600 shadow-sm">article</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'spreadsheet')"
+										class="text-green-600 shadow-sm">table_chart</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'presentation')"
+										class="text-orange-500 shadow-sm">slideshow</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'video')"
+										class="text-purple-500 shadow-sm">videocam</mat-icon>
+									<mat-icon *ngIf="isTypeIncluded(fileWrapper.type!, 'other')"
+										class="text-gray-500 shadow-sm">attach_file</mat-icon>
+								</a>
+							</div>
+							<div class="min-w-0 flex-1">
+								<!-- Category first, larger and more prominent -->
+								<div *ngIf="fileWrapper.categorie"
+									class="text-sm font-semibold text-blue-600 mb-1 truncate">
+									{{ fileWrapper.categorie }}
+								</div>
+								<!-- Filename second, smaller -->
+								<p class="text-xs text-gray-600 truncate" [title]="fileWrapper.name">
+									{{ fileWrapper.name! }}
+								</p>
+							</div>
+							<!-- Signed Status Icon -->
+							<div class="mr-2" *ngIf="fileWrapper.isSigned !== undefined">
+								<mat-icon *ngIf="fileWrapper.isSigned" class="text-green-500 "
+									matTooltip="Document signé">task_alt</mat-icon>
+								<mat-icon *ngIf="fileWrapper.isSigned === false" class="text-amber-500 "
+									matTooltip="Document non signé">radio_button_unchecked</mat-icon>
+							</div>
+
+							<!-- Quick Actions -->
+							<div
+								class="flex items-center space-x-1 opacity-20 group-hover:opacity-100 transition-opacity">
+								<button *ngIf="(formGroup || formGroupInit) && _isEdit"
+									(click)="deleteFile(i, undefined)"
+									class="p-1 text-gray-500 hover:text-red-600 rounded-full hover:bg-gray-100 shadow-sm"
+									type="button">
+									<mat-icon class="">delete</mat-icon>
+								</button>
+								<button
+									*ngIf="fileWrapper.uploadedUrl && (isImage(fileWrapper.uploadedUrl) || isMicrosoftDocx(fileWrapper.uploadedUrl) || isPdf(fileWrapper.uploadedUrl))"
+									(click)="viewFile(fileWrapper.uploadedUrl)"
+									class="p-1 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100 shadow-sm"
+									type="button">
+									<mat-icon class="">pageview</mat-icon>
+								</button>
+							</div>
+						</div>
+
+						<!-- File Details with subtle borders -->
+						<div class="p-3 text-xs space-y-2 bg-white">
+							<!-- File Info -->
+							<div class="grid grid-cols-2 gap-2 items-center">
+								<div *ngIf="fileWrapper.size" class="text-gray-500 bg-gray-50 px-2 py-1 rounded">
+									{{ fileWrapper.size! / 1024 / 1024 | number: '1.2-2' }} MB
+								</div>
+								<div class="text-right">
+									<span [ngClass]="{
+							'px-2 py-0.5 rounded-full text-xs shadow-sm': true,
+							'bg-gray-100 text-gray-600': fileWrapper.status === 'not-uploaded',
+							'bg-blue-100 text-blue-600': fileWrapper.status === 'uploading',
+							'bg-yellow-100 text-yellow-600': fileWrapper.status === 'deleting',
+							'bg-green-100 text-green-600': fileWrapper.status === 'success',
+							'bg-red-100 text-red-600': fileWrapper.status === 'error' || fileWrapper.status === 'delete-error'
+						  }">
+										{{ fileWrapper.status }}
+									</span>
+								</div>
+							</div>
+
+							<!-- Creator Info -->
+							<div *ngIf="fileWrapper.contactCreator?.nom"
+								class="text-gray-600 border-t border-gray-100 pt-2">
+								<div class="flex justify-between">
+									<span class="text-gray-400">Créé par:</span>
+									<span class="font-medium">{{ fileWrapper.contactCreator?.nom }} {{
+										fileWrapper.contactCreator?.prenom }}</span>
+								</div>
+								<div *ngIf="fileWrapper.contactCreator?.email" class="text-gray-400 truncate mt-0.5">
+									{{ fileWrapper.contactCreator?.email }}
+								</div>
+							</div>
+
+							<!-- Academy Info -->
+							<div *ngIf="fileWrapper.academieCreator?.denominationSociale"
+								class="text-gray-600 border-t border-gray-100 pt-2">
+								<div class="truncate font-medium">
+									{{ fileWrapper.academieCreator?.denominationSociale }} - {{
+									fileWrapper.academieCreator?.codePostal }}
+								</div>
+								<div *ngIf="fileWrapper.academieCreator?.mailSociete"
+									class="text-gray-400 truncate mt-0.5">
+									{{ fileWrapper.academieCreator?.mailSociete }}
+								</div>
+							</div>
+
+							<!-- Dates -->
+							<div class="text-gray-500 border-t border-gray-100 pt-2">
+								<div class="grid grid-cols-2 gap-4">
+									<div class="bg-gray-50 p-2 rounded">
+										<div class="text-gray-400 text-xs">Créé:</div>
+										<div class="font-medium">{{ fileWrapper.createdAt | date:'short' }}</div>
+									</div>
+									<div class="bg-gray-50 p-2 rounded">
+										<div class="text-gray-400 text-xs">Modifié:</div>
+										<div class="font-medium">{{ fileWrapper.updatedAt | date:'short' }}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<button mat-raised-button [class.button-warn]="isUploadWarnNeeded()" *ngIf="isUploadWarnNeeded() && _isEdit"
+		(click)="uploadAllFiles($event)" type="button">Upload</button>
+	<!-- Upload All Button -->
+</div>
+
+<!-- Error message -->
+@if (formGroup && controlName) {
+<div *ngIf="formGroup.get(controlName)?.invalid && (formGroup.get(controlName)?.dirty || formGroup.get(controlName)?.touched)"
+	class="error-message color-red col-span-1">
+	{{ getErrorMessage() }}
+</div>
+}
+
+@if(_testView) {
+<br>files<br>
+<pre
+	style="margin-top: 50px; border: 1px solid blue; width: 100%; white-space: pre-wrap;">{{filesDisplay$M() | json}}</pre>
+<br>element<br>
+<pre style="margin-top: 50px; border: 1px solid red; width: 100%; white-space: pre-wrap;">{{piecesJointes | json}}</pre>
+}

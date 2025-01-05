@@ -1,0 +1,41 @@
+<div *ngIf="contacts() != null && contactsLenght$S() > 0; else noContacts">
+	<ul>
+		<li *ngFor="let contact of contacts(); let i = index">
+			@if(contact !== null && contact !== undefined){
+
+			<div class="list-contact items-center flex flex-row sm:flex-col w-full mx-auto">
+
+
+				<div style="padding: 10px; margin-right: 10px;">
+					<!-- This will make the image take up 2 out of 6 columns -->
+					<img alt="Logo"
+						class="w-full h-auto rounded-full border-2 border-slate-50 drop-shadow-md"
+						style="max-width: 80px; max-height: 80px;" src="{{contact.profilePicture?.parseFile?.url ? contact.profilePicture?.parseFile?.url : photo }}">
+				</div>
+				<div class="flex flex-col justify-center ml-10 w-full">
+					<span class="box box1"><b>Nom Prénom:</b>
+						@if(contact.nom){
+						{{ contact.nom }}
+						}
+						@if(contact.prenom){
+						{{contact.prenom}}
+						}
+					</span>
+					@if(contact.email){
+					<span class="box box2"><b>Email:</b> {{ contact.email }}</span>
+					}
+					@if(contact.numPortable){
+					<span class="box box3"><b>Numéro Portable:</b> {{ contact.numPortable }}</span>
+					}
+					@if(contact.categorieContact){
+					<span class="box box4"><b>Catégories Contact:</b> {{ contact.categorieContact }}</span>
+					}
+				</div>
+			</div>
+			}
+		</li>
+	</ul>
+</div>
+<ng-template #noContacts>
+	<p>No selected contacts.</p>
+</ng-template>

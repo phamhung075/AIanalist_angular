@@ -1,0 +1,107 @@
+<mat-form-field class="w-full mx-auto" appearance="fill" subscriptSizing="dynamic" [formGroup]="formGroup">
+	<mat-label>{{ fieldName }}</mat-label>
+	<input matInput type="text" aria-label="Dénomination sociale" [matAutocomplete]="auto"
+		formControlName="{{ controlName }}" autocomplete="off" (blur)="onTouched()" (click)="focus()"
+		(focus)="initFilterOptions()" #value [ngClass]="{ 'hidden-input': canClear(), 'visible-input': !canClear() }" />
+
+	@if (formControl && formControl.enabled && canClear()) {
+	<div class="clear-button">
+		<button (click)="clearInput(value)">
+			<mat-icon>clear</mat-icon>
+		</button>
+	</div>
+	}
+	@if (this.loading) {
+	<mat-spinner matSuffix [diameter]="18" style="float: right; margin-left: 8px; margin-right: 20px"></mat-spinner>
+	}
+	
+	@if (formControl && formControl.value && valid()) {
+	<div class="card-visite w-full mx-auto">
+		<div class="flex flex-col md:flex-row items-center justify-center w-full mx-auto p-4">
+			<img alt="Academy Logo"
+				class="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 rounded-full border-2 border-yellow-500 mr-6 transition-transform duration-300 hover:scale-105"
+				[src]="formControl.value.logoImage?.parseFile?.url ?? '/assets/images/no-logo.png'" />
+			<div class="flex flex-col text-center w-full mx-auto mt-4 md:mt-0">
+				<h1 class="text-sm md:text-md lg:text-lg text-gray-800 mb-2 break-words whitespace-normal">
+					{{ formControl.value.denominationSociale }}
+				</h1>
+				<p class="text-xs sm:text-sm md:text-base text-gray-600 mb-4 break-words whitespace-normal">
+					{{ formControl.value.adresse }}, {{ formControl.value.codePostal
+					}}
+					{{ formControl.value.ville }}
+				</p>
+			</div>
+		</div>
+		<div class="w-full mx-auto">
+			<div class="flex items-center mb-2 text-sm sm:text-md md:text-lg">
+				<i class="fas fa-phone-alt text-gray-500 mr-2"></i>
+				<span class="text-gray-700 pl-4 break-words whitespace-normal">
+					{{ formControl.value.telephoneSociete }}
+				</span>
+			</div>
+			<div class="flex items-center text-xs sm:text-sm md:text-base italic">
+				<i class="fas fa-envelope text-gray-500 mr-2"></i>
+				<span class="text-blue-600 pl-4 break-words whitespace-normal">
+					{{ formControl.value.mailSociete }}
+				</span>
+			</div>
+		</div>
+	</div>
+	}
+
+	<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onOptionSelected($event)">
+		<mat-option class="border border-t p-4" *ngFor="let option of filteredOptions | async" [value]="option">
+			<div class="flex flex-col sm:flex-row items-center w-full mx-auto">
+				<div class="p-2 sm:p-4">
+					<img alt="Logo"
+						class="profile-image rounded-full border-2 border-blue-500 transition-transform duration-300 hover:scale-105"
+						style="max-width: 80px;"
+						src="{{ option.logoImage?.parseFile?.url ? option.logoImage?.parseFile?.url : '/assets/images/no-logo.png' }}" />
+				</div>
+				<div class="flex flex-col justify-center w-full mx-auto">
+					<span
+						class="text-xs sm:text-sm md:text-base lg:text-lg font-semibold break-words whitespace-normal">
+						<b>Dénomination Sociale:</b> {{ option.denominationSociale }}
+					</span>
+					<span class="text-xs sm:text-sm md:text-base lg:text-lg break-words whitespace-normal">
+						<b>Adresse:</b> {{ option.adresse }} {{ option.codePostal }} {{ option.ville }}
+					</span>
+					<span class="text-xs sm:text-sm md:text-base lg:text-lg break-words whitespace-normal">
+						<b>Téléphone:</b> {{ option.telephoneSociete }}
+					</span>
+					<span
+						class="text-xs sm:text-sm md:text-base lg:text-lg text-blue-600 break-words whitespace-normal">
+						<b>Email:</b> {{ option.mailSociete }}
+					</span>
+				</div>
+			</div>
+		</mat-option>
+	</mat-autocomplete>
+</mat-form-field>
+
+@if (formControl) {
+@if (formControl.invalid && (formControl.dirty || formControl.touched)) {
+<mat-error>
+	<span class="text-xs sm:text-sm md:text-base text-red-500">
+		{{ getErrorMessage() }}
+	</span>
+</mat-error>
+}
+@if (value && value.value && value.value.length < 2 && formControl.touched) { <span
+	class="text-xs sm:text-sm md:text-base text-gray-500">
+	La recherche doit contenir au moins 2 caractères, par Dénomination sociale
+	</span>
+	}
+	}
+	@if (_testView) {
+	@if (formControl.value) {
+	<pre class="text-xs sm:text-sm md:text-base text-gray-700">
+	{{ formControl.value | json }}
+  </pre>
+	}
+	@if (logoImage()) {
+	<pre class="text-xs sm:text-sm md:text-base text-gray-700">
+	Logo Image: {{ logoImage() }}
+  </pre>
+	}
+	}
