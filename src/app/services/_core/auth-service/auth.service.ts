@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { catchError, tap, finalize, switchMap } from 'rxjs/operators';
+import { Observable, BehaviorSubject, throwError, timer } from 'rxjs';
+import { catchError, tap, finalize, switchMap, map } from 'rxjs/operators';
 import { RestService } from '../rest-service/rest.service';
 
 export interface User {
@@ -115,9 +115,20 @@ export class AuthService {
       })
       .pipe(
         tap(response => {
-          console.log('Login successful');
-          // Immediately try to get user details to verify cookie authentication
-          this.verifyAuth();
+          // Log full response details
+          console.log('Full login response:', response);
+          console.log('Response headers:', response.options?.headers);
+          console.log('Set-Cookie headers:', response.options?.headers?.['Set-Cookie']);
+          
+          // Log cookies immediately after login
+          console.log('Cookies after login:', document.cookie);
+          
+          // Add delay before verification
+          setTimeout(() => {
+            console.log('Verifying auth after delay...');
+            console.log('Cookies before verification:', document.cookie);
+            this.verifyAuth();
+          }, 2000);
         }),
         catchError(error => {
           console.error('Login error:', error);
@@ -127,6 +138,7 @@ export class AuthService {
   }
 
   private verifyAuth() {
+    console.log('Starting auth verification...');
     this.restService.get('/auth/current')
       .subscribe({
         next: (response) => {
@@ -134,6 +146,10 @@ export class AuthService {
         },
         error: (error) => {
           console.error('Auth verification failed:', error);
+          // Log the error details
+          console.error('Error status:', error.status);
+          console.error('Error message:', error.message);
+          console.error('Available cookies:', document.cookie);
         }
       });
   }

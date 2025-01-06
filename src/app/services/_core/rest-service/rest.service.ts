@@ -10,20 +10,14 @@ import { environment } from '../../../../../environments/environment';
 export class RestService {
   private apiUrl = `${environment.urlBackend}${environment.baseapi}`;
 
-  constructor(
-    private http: HttpClient
-  ) {
+  constructor(private http: HttpClient) {
     console.log('Environment:', environment.production ? 'Production' : 'Development');
     console.log('API URL:', this.apiUrl);
   }
 
   private createRequestOptions(params?: any) {
     const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      // Add origin header for production
-      ...(environment.production && {
-        'Origin': window.location.origin
-      })
+      'Content-Type': 'application/json'
     });
 
     const options = {
@@ -39,15 +33,6 @@ export class RestService {
       });
     }
 
-    // Log request details
-    console.log('Request options:', {
-      environment: environment.production ? 'production' : 'development',
-      url: this.apiUrl,
-      headers: headers.keys(),
-      withCredentials: options.withCredentials,
-      cookies: document.cookie
-    });
-
     return options;
   }
 
@@ -58,17 +43,12 @@ export class RestService {
     return this.http.get<T>(url, this.createRequestOptions(params)).pipe(
       tap({
         next: (response: any) => {
-          console.log(`Response headers for ${endpoint}:`, {
-            'set-cookie': response.headers.getAll('set-cookie'),
-            'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
-          });
-          console.log(`Response body from ${endpoint}:`, response.body);
+          console.log(`Response from ${endpoint}:`, response.body);
         },
         error: (error) => {
           console.error(`Error in GET request to ${endpoint}:`, {
             status: error.status,
-            message: error.message,
-            headers: error.headers?.keys()
+            message: error.message
           });
         }
       }),
@@ -83,8 +63,6 @@ export class RestService {
     return this.http.post<T>(url, data, this.createRequestOptions()).pipe(
       tap({
         next: (response: any) => {
-          console.log(`Request headers for ${endpoint}:`, response.headers);
-          console.log(`Response cookies:`, response.headers.getAll('set-cookie'));
           console.log(`Response from ${endpoint}:`, response.body);
         },
         error: (error) => console.error(`Error in POST request to ${endpoint}:`, error)
@@ -116,7 +94,7 @@ export class RestService {
 
     const httpOptions = {
       headers: new HttpHeaders({
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       }),
       params: new HttpParams(),
       withCredentials: true,
@@ -135,7 +113,6 @@ export class RestService {
     }).pipe(
       tap({
         next: (response: any) => {
-          console.log(`Request headers for ${endpoint}:`, response.headers);
           console.log(`Response from ${endpoint}:`, response.body);
         },
         error: (error) => console.error(`Error in ${method} request to ${endpoint}:`, error)
@@ -148,12 +125,10 @@ export class RestService {
   private handleError(error: HttpErrorResponse) {
     console.error('Full error response:', error);
     
-    // If the error response matches our API error format, return it
     if (error.error && 'success' in error.error && !error.error.success) {
       return throwError(() => error.error);
     }
 
-    // Otherwise, create a standardized error response
     return throwError(() => ({
       success: false,
       code: error.status,
