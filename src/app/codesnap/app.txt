@@ -1,35 +1,54 @@
 Project Directory: app
-Total Files Analyzed: 32
-Total Size: 0.05 MB
-Date: 2025-02-07T22:42:52.288Z
+Total Files Analyzed: 42
+Total Size: 0.07 MB
+Date: 2025-02-10T17:37:07.878Z
 
 Token counts and costs by model:
-   GPT-3.5: 10.9K tokens → $0.0163
-   GPT-4:   10.9K tokens → $0.3269
-   Claude:  10.9K tokens → $0.1635
-   LLaMA 2: 12.0K tokens → $0.0240
+   GPT-3.5: 15.2K tokens → $0.0228
+   GPT-4:   15.2K tokens → $0.4558
+   Claude:  15.2K tokens → $0.2279
+   LLaMA 2: 16.7K tokens → $0.0334
 
 Directory structure:
-├── guards/
-│   ├── auth.guard.ts
-│   ├── auth.interceptor.ts
-│   └── non-auth.guard.ts
-├── pages/
-│   ├── layout/
-│   │   ├── layout.component.html
-│   │   ├── layout.component.scss
-│   │   ├── layout.component.spec.ts
-│   │   └── layout.component.ts
-│   ├── login/
-│   │   ├── login.component.html
-│   │   ├── login.component.scss
-│   │   ├── login.component.spec.ts
-│   │   └── login.component.ts
-│   └── profil/
-│       ├── profil.component.html
-│       ├── profil.component.scss
-│       ├── profil.component.spec.ts
-│       └── profil.component.ts
+├── _core/
+│   ├── auth/
+│   │   ├── guard/
+│   │   │   ├── auth.guard.ts
+│   │   │   └── non-auth.guard.ts
+│   │   └── interception/
+│   │       └── auth.interceptor.ts
+│   ├── base/
+│   │   ├── domain/
+│   │   │   ├── clients/
+│   │   │   │   └── base.interface.client.ts
+│   │   │   └── models/
+│   │   │       ├── base-entity-DTO.model.ts
+│   │   │       ├── base-entity.abstract.model.ts
+│   │   │       ├── filter-event.model.ts
+│   │   │       ├── http-options.model.ts
+│   │   │       └── ui-paging.model.ts
+│   │   ├── gateways/
+│   │   │   ├── http/
+│   │   │   │   ├── custom-http-params.ts
+│   │   │   │   └── http-base.abstract.client.ts
+│   │   │   └── mocks/
+│   │   │       └── mock-base.abstract.client.ts
+│   │   └── use-cases/
+│   │       ├── base.abstract.builder.ts
+│   │       └── base.abstract.handler.ts
+│   ├── error-handler/
+│   │   ├── error-handler.ts
+│   │   └── http-error-handler.interceptor.ts
+│   ├── notification/
+│   │   ├── domain/
+│   │   │   └── models/
+│   │   │       └── notification.model.ts
+│   │   └── use-cases/
+│   │       └── notification.handler.ts
+│   └── utils/
+│       └── constants.ts
+├── interface/
+│   └── contact.interface.ts
 ├── services/
 │   ├── _core/
 │   │   ├── auth/
@@ -39,21 +58,1421 @@ Directory structure:
 │   │   ├── rest/
 │   │   │   ├── rest.service.spec.ts
 │   │   │   └── rest.service.ts
-│   │   └── token/
-│   │       ├── token.service.spec.ts
-│   │       └── token.service.ts
-│   ├── auth/
-│   │   ├── google.service.spec.ts
-│   │   └── google.service.ts
-│   └── profil-service/
-│       ├── profil.service.spec.ts
-│       └── profil.service.ts
+│   │   ├── token/
+│   │   │   ├── token.service.spec.ts
+│   │   │   └── token.service.ts
+│   │   ├── route-logging.service.spec.ts
+│   │   └── route-logging.service.ts
+│   ├── error-test/
+│   │   ├── error-test.service.spec.ts
+│   │   └── error-test.service.ts
+│   ├── image/
+│   │   ├── image.service.spec.ts
+│   │   └── image.service.ts
+│   └── profile-service/
+│       ├── profile.interface.ts
+│       ├── profile.service.spec.ts
+│       └── profile.service.ts
 ├── app.component.html
 ├── app.component.scss
 ├── app.component.spec.ts
 ├── app.component.ts
 ├── app.config.ts
 └── app.routes.ts
+
+================================================
+File: _core/auth/guard/auth.guard.ts
+================================================
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, CanActivate, Router } from '@angular/router';
+import { catchError, map, Observable, of } from 'rxjs';
+import { AuthService } from '../../../services/_core/auth/auth.service';
+import { RouteLoggingService } from '../../../services/_core/route-logging.service';
+
+@Injectable({
+	providedIn: 'root',
+})
+export class AuthGuard implements CanActivate {
+	constructor(
+		private authService: AuthService,
+		private router: Router,
+		private logger: RouteLoggingService
+	) {}
+
+	canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
+		const path = route.routeConfig?.path || 'unknown';
+		this.logger.logGuardCheck('AuthGuard', path);
+
+		return this.authService.getCurrentUser().pipe(
+			map((user) => {
+				if (user) {
+					this.logger.logGuardResult('AuthGuard', true);
+
+					if (route.routeConfig?.path === 'login') {
+						this.logger.logRouteHit('Redirecting to dashboard');
+						this.router.navigate(['/dashboard']);
+						return false;
+					}
+					return true;
+				}
+
+				this.logger.logGuardResult('AuthGuard', false);
+				if (route.routeConfig?.path !== 'login') {
+					this.logger.logRouteHit('Redirecting to login');
+					this.router.navigate(['/login']);
+				}
+				return route.routeConfig?.path === 'login';
+			}),
+			catchError((error) => {
+				console.error('🔴 AuthGuard Error:', error);
+				this.router.navigate(['/login']);
+				return of(false);
+			})
+		);
+	}
+}
+
+
+================================================
+File: _core/auth/guard/non-auth.guard.ts
+================================================
+import { Injectable } from '@angular/core';
+import { Router, UrlTree } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { AuthService } from '../../../services/_core/auth/auth.service';
+
+@Injectable({
+	providedIn: 'root',
+})
+export class NonAuthGuard {
+	constructor(private auth: AuthService, private router: Router) {}
+
+	canActivate(): Observable<boolean | UrlTree> {
+		return of(true);
+	}
+}
+
+
+================================================
+File: _core/auth/interception/auth.interceptor.ts
+================================================
+import {
+	HttpErrorResponse,
+	HttpEvent,
+	HttpHandler,
+	HttpInterceptor,
+	HttpRequest,
+} from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { TEST_View } from '@environments/environment.development';
+import { catchError, Observable, switchMap, throwError } from 'rxjs';
+import { AuthService } from '../../../services/_core/auth/auth.service';
+import { TokenService } from '../../../services/_core/token/token.service';
+
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor {
+	constructor(
+		private authService: AuthService,
+		private tokenService: TokenService
+	) {}
+
+	intercept(
+		req: HttpRequest<any>,
+		next: HttpHandler
+	): Observable<HttpEvent<any>> {
+		console.log('Auth Interceptor - Starting interception');
+		return next.handle(req).pipe(
+			catchError((error: HttpErrorResponse) => {
+				if (error.status === 401) {
+					return this.tokenService.refreshIdToken().pipe(
+						switchMap(() => next.handle(req)),
+						catchError((refreshError) => {
+							this.authService.logout();
+							if (TEST_View.interceptor__error_detail_log) {
+								return throwError(() => refreshError);
+							} else {
+								return throwError(
+									() => new Error('Erreur de rafraîchissement du token')
+								);
+							}
+						})
+					);
+				}
+				if (error.status === 404) {
+					console.log('Erreur 404');
+					if (TEST_View.interceptor__error_detail_log) {
+						return throwError(() => error);
+					} else {
+						return throwError(() => new Error('Ressource non trouvée'));
+					}
+				}
+				if (TEST_View.interceptor__error_detail_log) {
+					return throwError(() => error);
+				} else {
+					return throwError(() => new Error('Erreur inconnue'));
+				}
+			})
+		);
+	}
+}
+
+
+================================================
+File: _core/base/domain/clients/base.interface.client.ts
+================================================
+import { Observable } from 'rxjs';
+import { BaseEntity } from '@core/base/domain/models/base-entity.abstract.model';
+import { FilterEvent } from '@core/base/domain/models/filter-event.model';
+import { KeyValueObject } from '@ui/shared/models/utils.model';
+
+/**
+ * L'interface `AbstractBaseClient` définit les méthodes qui devront être implémentées par les classes qui manipulant les données et qui extends cette interface.
+ * C'est notre contrat pour manipuler les données.
+ * @param {T} T extends BaseEntity L'entité manipulée.
+ * @param {F} F extends FilterEvent Le filtre utilisé pour récupérer les entités.
+ */
+export abstract class AbstractBaseClient<
+	T extends BaseEntity,
+	F extends FilterEvent
+> {
+	/**
+	 * La méthode `all` est utilisée pour récupérer tous les éléments.
+	 * Elle doit retourner un Observable qui émet un tableau d'éléments.
+	 * @param {F} filters Les filtres utilisés pour récupérer les éléments.
+	 * @returns {Observable<T[]>} Un Observable qui émet un tableau d'éléments.
+	 */
+	abstract all(filters?: F): Observable<T[]>;
+
+	/**
+	 * La méthode `get` est utilisée pour récupérer un élément avec l'ID passé en param.
+	 * Elle retourne un Observable avec le bon élément ou une erreur si le élément n'est pas trouvé.
+	 * @param {string} id L'ID de l'élément à récupérer.
+	 * @param {KeyValueObject} options Les paramètres additionnels.
+	 * @returns {Observable<T>} Un Observable qui émet un le élément récupéré.
+	 */
+	abstract get(id: string, options?: KeyValueObject): Observable<T>;
+
+	/**
+	 * La méthode `create` est utilisée pour créer un élément.
+	 * Elle retourne un Observable avec le nouvel élément ou une erreur si la création a échoué.
+	 * @param {T} entity L'élément à créer.
+	 * @returns {Observable<T | void>} Un Observable qui émet le nouvel élément créé ou rien du tout.
+	 */
+	abstract create(entity: T): Observable<T | void>;
+
+	/**
+	 * La méthode `update` est utilisée pour mettre à jour un élément.
+	 * Elle retourne un Observable avec l'élément mis à jour ou une erreur si la mise à jour a échoué.
+	 * @param {T} entity L'élément à mettre à jour.
+	 * @returns {Observable<T | void>} Un Observable qui émet l'élément mis à jour ou rien du tout.
+	 */
+	abstract update(entity: T): Observable<T | void>;
+
+	/**
+	 * La méthode `delete` est utilisée pour supprimer un élément.
+	 * Elle retourne un Observable avec un message de succès ou une erreur si la suppression a échoué.
+	 * @param {string | T} id  L'ID de l'entité à supprimer.
+	 * @param {T} entity  Facultatif: L'entité à supprimer (utilisé dans le cas des entité avec un State).
+	 * @returns {Observable<void>}
+	 */
+	abstract delete(id: string, entity?: T): Observable<void>;
+}
+
+
+================================================
+File: _core/base/domain/models/base-entity-DTO.model.ts
+================================================
+export interface BaseEntityDTO {
+    [key: string]: unknown;
+}
+
+
+================================================
+File: _core/base/domain/models/base-entity.abstract.model.ts
+================================================
+import { KeyValueObject } from '@ui-shared/models/utils.model';
+
+/**
+ * Class permettant de définir les information partagé pour une entité.
+ */
+export abstract class BaseEntity {
+    constructor(private _json: KeyValueObject) {}
+
+    get json(): KeyValueObject {
+        return this._json;
+    }
+
+    get id(): string {
+        return this._json['id'] as string;
+    }
+
+    get isEdited(): boolean {
+        return this._json['isEdited'] as boolean;
+    }
+}
+
+
+================================================
+File: _core/base/domain/models/filter-event.model.ts
+================================================
+import { Sort } from '@angular/material/sort';
+import { MAX_LENGTH_PAGING } from '@utils/constants';
+import { UiPaging } from './ui-paging.model';
+
+export class FilterEvent {
+    /**
+     * Pagination
+     */
+    paging?: UiPaging;
+
+    /**
+     *  Tri
+     */
+    sort?: Sort;
+
+    /**
+     * Filtres
+     */
+    filters?: Filter[];
+
+    /**
+     * Terme de recherche
+     */
+    searchText?: string;
+
+    constructor(
+        sort?: Sort,
+        searchText?: string,
+        paging?: UiPaging,
+        filters: Filter[] = []
+    ) {
+        this.sort = sort;
+        this.filters = filters;
+        this.searchText = searchText ?? '';
+        this.paging = paging;
+    }
+
+    /**
+     * Récuperation d'une valeur de filtre
+     * @param {string} name Nom du filtre
+     * @returns {T | undefined} Valeur du filtre
+     */
+    public getFilterDefinition<T>(name: string): T | undefined {
+        return this.getFilter(name)?.definition as T;
+    }
+
+    /**
+     * Récuperation d'une valeur de filtre
+     * @param {string} name Nom du filtre
+     * @returns {T | undefined} Valeur du filtre
+     */
+    public getFilter(name: string): Filter | undefined {
+        return this.filters?.find(filter => filter.name === name);
+    }
+
+    /**
+     * Ajout d'un filtre
+     * @param {string} name Nom du filtre
+     * @param {T} definition Definition du filtre
+     * @param {boolean} additional Indique si le filtre est additionnel
+     * @returns {FilterEvent}
+     */
+    public setFilter<T>(
+        name: string,
+        definition: T,
+        additional?: boolean
+    ): FilterEvent {
+        const filter = this.getFilter(name);
+        if (filter) {
+            filter.definition = definition;
+        } else {
+            this.filters?.push(new Filter(name, definition, additional));
+        }
+        return this;
+    }
+
+    /**
+     * Suprime le filtre suivant le nom passé en paramètre
+     * @param {string} name Nom du filtre à supprimer
+     * @returns {FilterEvent} Instance de l'objet
+     */
+    public deleteFilter(name: string): FilterEvent {
+        this.filters = this.filters?.filter(f => f.name !== name);
+        return this;
+    }
+
+    /**
+     * Supprimer tous les filtres
+     * @returns {FilterEvent} Instance de l'objet
+     */
+    public clearFilters(): FilterEvent {
+        this.filters = [];
+        return this;
+    }
+
+    /**
+     * Transforme l'objet en DTO
+     * @returns {FilterDto} DTO
+     */
+    public transformToDTO(): FilterDto {
+        return new FilterDto(
+            this.paging?.offset,
+            this.paging?.range,
+            this.sort
+                ? [
+                      {
+                          name: this.sort?.active,
+                          descending: this.sort?.direction === 'desc',
+                      },
+                  ]
+                : undefined,
+            // Si la définition du filtre est un tableau, on l'envoie sous forme de string
+            this.filters
+                ? this.filters?.map(filter => {
+                      return {
+                          name: filter.name,
+                          definition: Array.isArray(filter.definition)
+                              ? filter.definition.join(',')
+                              : filter.definition,
+                      };
+                  })
+                : undefined
+        );
+    }
+}
+
+export class Filter {
+    /**
+     * Nom du filtre
+     */
+    name: string;
+
+    /**
+     * Définition du filtre (valeur simple ou array)
+     */
+    definition: unknown;
+
+    /**
+     * Filtre additionnel
+     */
+    additional: boolean;
+
+    constructor(
+        name: string,
+        definition: unknown,
+        additional: boolean = false
+    ) {
+        this.name = name;
+        this.definition = definition;
+        this.additional = additional;
+    }
+}
+
+export interface Order {
+    name: string;
+    descending: boolean;
+}
+
+export class FilterDto {
+    firstLineIndex?: number;
+    linesCount?: number;
+    orders?: Order[];
+    filters?: { name: string; definition: unknown }[];
+
+    constructor(
+        firstLineIndex?: number,
+        linesCount?: number,
+        orders?: Order[],
+        filters?: { name: string; definition: unknown }[]
+    ) {
+        this.firstLineIndex = firstLineIndex ?? 0;
+        this.linesCount = linesCount ?? MAX_LENGTH_PAGING;
+        this.orders = orders ?? [];
+        this.filters = filters ?? [];
+    }
+}
+
+
+================================================
+File: _core/base/domain/models/http-options.model.ts
+================================================
+import { HttpContext, HttpHeaders } from '@angular/common/http';
+import { CustomHttpParams } from '@core/base/gateways/http/custom-http-params';
+
+export class HttpOptions {
+    headers?:
+        | HttpHeaders
+        | {
+              [header: string]: string | string[];
+          };
+    context?: HttpContext;
+    observe?: string = 'body';
+    params?:
+        | CustomHttpParams
+        | {
+              [param: string]:
+                  | string
+                  | number
+                  | boolean
+                  | ReadonlyArray<string | number | boolean>;
+          };
+    reportProgress?: boolean;
+    responseType: string = 'json';
+    withCredentials?: boolean;
+    transferCache?:
+        | {
+              includeHeaders?: string[];
+          }
+        | boolean;
+}
+
+
+================================================
+File: _core/base/domain/models/ui-paging.model.ts
+================================================
+import { MAX_LENGTH_PAGING } from '@utils/constants';
+
+export class UiPaging {
+    /**
+     * Numéro de la première ligne ou page (0 par default)
+     */
+    offset: number;
+
+    /**
+     * Nombre d'éléments chargé ou nombre d'éléments par page (MAX_LENGTH_PAGING par default)
+     */
+    range: number;
+
+    /**
+     * Nombre d'éléments total
+     */
+    count: number;
+
+    /**
+     * Permet de savoir si on est en pagination lazyloadé
+     */
+    lazyLoading: boolean;
+
+    constructor(
+        lazyLoading = true,
+        offset = 0,
+        range = MAX_LENGTH_PAGING,
+        count = 0
+    ) {
+        this.offset = offset;
+        this.range = range;
+        this.count = count;
+        this.lazyLoading = lazyLoading;
+    }
+}
+
+
+================================================
+File: _core/base/gateways/http/custom-http-params.ts
+================================================
+import { HttpParams } from '@angular/common/http';
+
+export class CustomHttpParams {
+    private httpParams: HttpParams = new HttpParams();
+
+    /**
+     * Le constructeur prend optionnellement un nom et un valeur pour une définition directe d'un paramètre.
+     * @param {string} name Nom du paramètre
+     * @param {string | number | boolean} value  Valeur du paramètre
+     */
+    constructor(name?: string, value?: string | number | boolean) {
+        if (name != null) {
+            this.httpParams = this.httpParams.set(name, <string>value);
+        }
+    }
+
+    /**
+     * Ajoute un paramètre en utilisant toString. Le name et la valeur doivent exister.
+     * @param {string} name Nom du paramètre
+     * @param {string | number | boolean} value Valeur du paramètre (format string, number ou boolean, pour les dates, utiliser les fonctions correspondantes)
+     */
+    public setValue(
+        name: string,
+        value: string | number | boolean
+    ): CustomHttpParams {
+        if (value != null && name !== undefined) {
+            this.httpParams = this.httpParams.append(name, <string>value);
+        }
+        return this;
+    }
+
+    /**
+     * Permets d'ajouter un paramètre de type array de string ou de number
+     * @param {string} name Nom du paramètre
+     * @param {unknown[]} value Valeur du paramètre
+     */
+    public setStringArrayValue(
+        name: string,
+        value: unknown[]
+    ): CustomHttpParams {
+        if (value !== null && name !== undefined) {
+            this.httpParams = this.httpParams.append(
+                name,
+                JSON.stringify(value)
+            );
+        }
+        return this;
+    }
+
+    /**
+     * Récupère les paramètres HTTP
+     * @returns {HttpParams}
+     */
+    public getParams(): HttpParams {
+        return this.httpParams;
+    }
+}
+
+
+================================================
+File: _core/base/gateways/http/http-base.abstract.client.ts
+================================================
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { HttpOptions } from '@core/base/domain/models/http-options.model';
+import { CustomHttpParams } from '@core/base/gateways/http/custom-http-params';
+import { Observable } from 'rxjs';
+import URI from 'urijs';
+
+/**
+ * La classe abstraite `AbstractHttpBaseClient` contient les méthodes partagées par les clients (services appelant les api) utilisant le protocole HTTP.
+ */
+export abstract class AbstractHttpBaseClient {
+    private readonly http = inject(HttpClient);
+
+    protected abstract basePathApi: string | undefined;
+
+    /**
+     * Création d'une URL à partir d'un chemin et de paramètres
+     * @param {path} path Chemin de l'URL
+     * @param {parameters} parameters Paramètres de l'URL
+     * @returns {string} URL complète
+     */
+    public makeURL(path: string, parameters?: string): string {
+        let url = ConfigUrl.makeURL(
+            this.basePathApi ? `${this.basePathApi}/${path}` : path
+        );
+
+        if (parameters) {
+            url += '?' + parameters;
+        }
+
+        return url;
+    }
+
+    /**
+     * Crée un objet de paramètres pour les url à partir d'un nom et d'une valeur
+     * @param {string} name Nom du paramètre
+     * @param {string} value Valeur du paramètre
+     * @returns {CustomHttpParams}
+     */
+    protected _makeSimpleParam(name: string, value: string): CustomHttpParams {
+        const params = new CustomHttpParams().setValue(name, value);
+        return params;
+    }
+
+    /**
+     * Crée un objet RequestOptions initialisé
+     * @param {CustomHttpParams} httpParams Tableau de paramètres
+     * @param {boolean} withCredentials Indique si on veut envoyer les cookies (par défaut true)
+     * @param {boolean} withResponse Indique si on veut récupérer la réponse entière (par défaut false)
+     * @param {string} responseType Type de réponse attendue (par défaut 'json')
+     * @returns {HttpOptions}
+     */
+    protected _getOptions(
+        httpParams?: CustomHttpParams,
+        headers?: HttpHeaders,
+        withCredentials: boolean = true,
+        withResponse: boolean = false,
+        responseType: string = 'json'
+    ): HttpOptions {
+        const options: HttpOptions = {
+            context: new HttpContext(),
+            params: httpParams?.getParams() as CustomHttpParams | undefined,
+            responseType: responseType,
+            withCredentials: withCredentials,
+            observe: withResponse ? 'response' : 'body',
+        };
+
+        if (headers) {
+            options.headers = headers;
+        }
+
+        return options;
+    }
+
+    /**
+     * Url complète à partir de la base du service transmise au constructeur et de la config générale.
+     * @param {string} service Nom du service à appeler
+     * @returns {string} URL complète
+     */
+    protected _getURL(service: string): string {
+        return this.makeURL(service);
+    }
+
+    /**
+     * Appelle le service par la méthode HttpGet
+     * @param {string} service Le nom du service a appeler
+     * @param {CustomHttpParams | string} param Tableau de paramètres (HttpParams) ou string donnant la valeur du paramètre ID
+     */
+    protected _get<T>(
+        service: string,
+        param?: CustomHttpParams | string,
+        headers?: HttpHeaders,
+        responseType?: string
+    ): Observable<T> {
+        const httpParams: CustomHttpParams | undefined = param
+            ? typeof param === 'string'
+                ? this._makeSimpleParam('id', param)
+                : param
+            : undefined;
+
+        return this.http.get<T>(
+            this._getURL(service),
+            this._getOptions(
+                httpParams,
+                headers,
+                true,
+                false,
+                responseType
+            ) as object
+        );
+    }
+
+    /**
+     * Appelle le service par la méthode HttpPost et passe les données
+     * @param {string} service Le nom du service a appeler
+     * @param {unknown} data Les données à envoyer
+     * @param {CustomHttpParams | string} param Tableau de paramètres (HttpParams) ou string donnant la valeur du paramètre ID
+     */
+    protected _post<T>(
+        service: string,
+        data: unknown,
+        param?: CustomHttpParams | string,
+        headers?: HttpHeaders
+    ): Observable<T> {
+        const httpParams: CustomHttpParams | undefined = param
+            ? typeof param === 'string'
+                ? this._makeSimpleParam('id', param)
+                : param
+            : undefined;
+        return this.http.post<T>(
+            this._getURL(service),
+            data,
+            this._getOptions(httpParams, headers) as object
+        );
+    }
+
+    /**
+     * Appelle le service par la méthode HttpPut et passe les données
+     * @param {string} service Le nom du service a appeler
+     * @param {unknown} data Les données à envoyer
+     * @param {CustomHttpParams | string} param Tableau de paramètres (HttpParams) ou string donnant la valeur du paramètre ID
+     */
+    protected _put<T>(
+        service: string,
+        data: unknown,
+        param?: CustomHttpParams | string
+    ): Observable<T> {
+        const httpParams: CustomHttpParams | undefined = param
+            ? typeof param === 'string'
+                ? this._makeSimpleParam('id', param)
+                : param
+            : undefined;
+
+        return this.http.put<T>(
+            this._getURL(service),
+            data,
+            this._getOptions(httpParams) as object
+        );
+    }
+
+    /**
+     * Appelle le service par la méthode HttpDelete
+     * @param {string} service Le nom du service a appeler
+     * @param {CustomHttpParams | string} param Tableau de paramètres (HttpParams) ou string donnant la valeur du paramètre ID
+     */
+    protected _delete<T>(
+        service: string,
+        param?: CustomHttpParams | string
+    ): Observable<T> {
+        const httpParams: CustomHttpParams | undefined = param
+            ? typeof param === 'string'
+                ? this._makeSimpleParam('id', param)
+                : param
+            : undefined;
+        return this.http.delete<T>(
+            this._getURL(service),
+            this._getOptions(httpParams) as object
+        );
+    }
+}
+
+class ConfigUrl {
+    public static makeURL(path: string, parameters: object = {}): string {
+        return URI(`api/${path}`).search(parameters).normalize().toString();
+    }
+}
+
+
+================================================
+File: _core/base/gateways/mocks/mock-base.abstract.client.ts
+================================================
+import { BaseEntity } from '@core/base/domain/models/base-entity.abstract.model';
+import { FilterEvent } from '@core/base/domain/models/filter-event.model';
+import { BehaviorSubject, Observable, Subject, map, tap } from 'rxjs';
+
+/**
+ * La classe `AbstractMockBaseClient` est une une classe abstraite permettant les implémentations des interface client et qui sont partagées
+ * Elle va permettre de simuler des comportements dans un environnement mockée ou de développement lorsque l'implémentation via le protocole HTTP n'est pas encore disponible.
+ */
+export abstract class AbstractMockBaseClient<
+    B extends BaseEntity,
+    F extends FilterEvent,
+> {
+    protected _entities$: Subject<B[]> = new BehaviorSubject<B[]>(
+        this._entities
+    );
+
+    constructor(protected _entities: B[] = []) {}
+
+    /**
+     * La méthode `all` est utilisée pour récupérer toutes les entité.
+     * Dans cette implémentation mockée, elle retourne un Observable d'un tableau vide ou contenant toutes les entités que l'on aura settées via le constructeur.
+     * @returns {Observable<B[]>} Un Observable qui émet un tableau vide ou contenant toutes les entités.
+     */
+    public all(filters?: F): Observable<B[]> {
+        if (filters) {
+            return this.filterEntities(filters);
+        } else {
+            return this._entities$;
+        }
+    }
+
+    /**
+     * Implémentation de la méthode générique de filtre des entités pour les mocks uniquement sur les champs texte.
+     * @param filters
+     */
+    protected filterEntities(filters: F): Observable<B[]> {
+        if (filters) {
+            const filteredEntities = this._entities.filter(value => {
+                if (!filters.searchText) {
+                    return true;
+                } else {
+                    return Object.keys(value).some(key => {
+                        return (
+                            !!value[key as keyof typeof value] &&
+                            String(value[key as keyof typeof value])
+                                .toLowerCase()
+                                .includes(
+                                    filters?.searchText?.toLowerCase() ?? ''
+                                )
+                        );
+                    });
+                }
+            });
+            this._entities$.next(filteredEntities);
+        }
+        return this._entities$;
+    }
+
+    /**
+     * La méthode `get` est utilisée pour récupérer une entité avec l'ID passé en param.
+     * Dans cette implémentation mockée, elle retourne un Observable avec la bonne entité parmis celles que l'on aura settée via le constructeur ou une erreur si elle n'est pas trouvée.
+     * @param {string} id  L'ID de l'entité à récupérer.
+     * @returns {Observable<B>} Un Observable qui émet un la bonne entité récupéré.
+     */
+    public get(id: string): Observable<B> {
+        return this._entities$.pipe(
+            map((bases: B[]) => bases.find((base: B) => base.id === id) as B),
+            tap(result => {
+                if (!result) {
+                    throw new Error(
+                        `Aucun objet n'a été trouvé avec l'ID: ${id}`
+                    );
+                }
+            })
+        );
+    }
+
+    /**
+     * La méthode `create` est utilisée pour créer une entité.
+     * Dans cette implémentation mockée, elle retourne un Observable avec la nouvelle entité ou une erreur si la création a échoué.
+     * @param {B} entity L'entité à créer.
+     * @returns {Observable<B>} Un Observable qui émet la nouvelle entité créée.
+     */
+    public create(entity: B): Observable<B> {
+        this._entities.push(entity);
+        this._entities$.next(this._entities);
+        return new Observable<B>(subscriber => {
+            subscriber.next(entity);
+            subscriber.complete();
+        });
+    }
+
+    /**
+     * La méthode `update` est utilisée pour mettre à jour une entité.
+     * Dans cette implémentation mockée, elle retourne un Observable avec l'entité mise à jour ou une erreur si la mise à jour a échoué.
+     * @param {B} entity L'entité à mettre à jour.
+     * @returns {Observable<B>} Un Observable qui émet l'entité mise à jour.
+     */
+    public update(entity: B): Observable<B> {
+        const index = this._entities.findIndex(
+            (base: B) => base.id === entity.id
+        );
+        if (index === -1) {
+            throw new Error(
+                `Aucun objet n'a été trouvé avec l'ID: ${entity.id}`
+            );
+        }
+        this._entities[index] = entity;
+        this._entities$.next(this._entities);
+        return new Observable<B>(subscriber => {
+            subscriber.next(entity);
+            subscriber.complete();
+        });
+    }
+
+    /**
+     * La méthode `delete` est utilisée pour supprimer une entité.
+     * Dans cette implémentation mockée, elle retourne un Observable avec un message de succès ou une erreur si la suppression a échoué.
+     * @param {string} is Id de l''entité à supprimer.
+     * @returns {Observable<void>}
+     */
+    public delete(id: string): Observable<void> {
+        const index = this._entities.findIndex((base: B) => base.id === id);
+        if (index === -1) {
+            throw new Error(`Aucun objet n'a été trouvé avec l'ID: ${id}`);
+        }
+        this._entities.splice(index, 1);
+        this._entities$.next(this._entities);
+        return new Observable<void>(subscriber => {
+            subscriber.complete();
+        });
+    }
+}
+
+
+================================================
+File: _core/base/use-cases/base.abstract.builder.ts
+================================================
+import { BaseEntity } from '@core/base/domain/models/base-entity.abstract.model';
+import { KeyValueObject } from '@ui-shared/models/utils.model';
+
+/**
+ * La classe `AbstractBaseBuilder` permet d'avoir un constructeur de l'objet `T extends BaseEntity` avec un simple object json.
+ * Elle utilise le pattern Builder pour créer des instances de `T extends BaseEntity`.
+ */
+export abstract class AbstractBaseBuilder<T extends BaseEntity> {
+    protected _json: KeyValueObject = {};
+    protected _id: string = '';
+
+    /**
+     * Initialiser l'instance avec l'objet json en entrée
+     * @param {KeyValueObject} json
+     * @returns
+     */
+    public withJsonObj(json: KeyValueObject): this {
+        // Si l'objet json est une chaine de caractère, on le transforme en objet
+        if (typeof json === 'string') {
+            json = { id: json };
+        }
+
+        this._json = json;
+        this._id = json['id'] as string;
+        return this;
+    }
+
+    /**
+     * Construire et renvoyer l'instance de `T extends BaseEntity`
+     */
+    abstract build(): T;
+}
+
+
+================================================
+File: _core/base/use-cases/base.abstract.handler.ts
+================================================
+import { AbstractBaseClient } from '@core/base/domain/clients/base.interface.client';
+import { BaseEntity } from '@core/base/domain/models/base-entity.abstract.model';
+import { FilterEvent } from '@core/base/domain/models/filter-event.model';
+import { KeyValueObject } from '@ui/shared/models/utils.model';
+import { Observable } from 'rxjs';
+
+/**
+ * La classe abstraite `AbstractBaseHandler` permet d'avoir les méthodes utilisées par un gestionnaire de données
+ * Elle définit les cas d'utilisation partagés pour les entités.
+ */
+export abstract class AbstractBaseHandler<
+    T extends BaseEntity,
+    F extends FilterEvent,
+> {
+    constructor(protected _client: AbstractBaseClient<T, F>) {}
+
+    /**
+     * La méthode `all` est utilisée pour récupérer toutes les entités de type T extends BaseEntity.
+     * Elle appelle le client correspondant pour récupérer toutes les entités de type T extends BaseEntity ou afficher l'erreure correspondante.
+     * @returns {Observable<T[]>} Un Observable qui émet un tableau vide ou remplis d'entités.
+     */
+    public all(filters?: F): Observable<T[]> {
+        return this._client.all(filters);
+    }
+
+    /**
+     * La méthode `get` est utilisée pour récupérer une entité avec l'ID passé en param.
+     * Elle appelle le client correspondant pour récupérer une entité ou afficher l'erreure correspondante.
+     * @param {strind} id L'ID de l'entité à récupérer.
+     * @param {KeyValueObject} options Les paramètres additionnels.
+     * @returns {Observable<T>} Un Observable qui émet l'entité récupéré.
+     */
+    public get(id: string, options?: KeyValueObject): Observable<T> {
+        return this._client.get(id, options);
+    }
+
+    /**
+     * La méthode `update` est utilisée pour mettre à jour un élément.
+     * Elle retourne un Observable avec l'élément mis à jour ou une erreur si la mise à jour a échoué.
+     * @param {T} Entity L'élément à mettre à jour.
+     * @returns {Observable<T | void>} Un Observable qui émet l'élément mis à jour ou rien.
+     */
+    public create(entity: T): Observable<T | void> {
+        return this._client.create(entity);
+    }
+
+    /**
+     * La méthode `update` est utilisée pour mettre à jour un élément.
+     * Elle retourne un Observable avec l'élément mis à jour ou une erreur si la mise à jour a échoué.
+     * @param {T} entity L'élément à mettre à jour.
+     * @returns {Observable<T | void>} Un Observable qui émet l'élément mis à jour ou rien.
+     */
+    public update(entity: T): Observable<T | void> {
+        return this._client.update(entity);
+    }
+
+    /**
+     * La méthode `delete` est utilisée pour supprimer un élément.
+     * Elle retourne un Observable avec un message de succès ou une erreur si la suppression a échoué.
+     * @param {string} id Id de l'élément à supprimer.
+     * @param {T} entity  Facultatif: L'entité à supprimer (utilisé dans le cas des entité avec un State).
+     * @returns {Observable<void>}
+     */
+    public delete(id: string, entity?: T): Observable<void> {
+        return this._client.delete(id, entity);
+    }
+}
+
+
+================================================
+File: _core/error-handler/error-handler.ts
+================================================
+import { HttpErrorResponse } from '@angular/common/http';
+import { ErrorHandler, Injectable, NgZone, inject } from '@angular/core';
+import { NotificationHandler } from '@core/notification/use-cases/notification.handler';
+
+@Injectable()
+export class AppErrorHandler implements ErrorHandler {
+    private notificationService: NotificationHandler =
+        inject(NotificationHandler);
+
+    constructor(private zone: NgZone) {}
+
+    handleError(error: unknown): void {
+        console.error('Caught by Custom Error Handler: ', error);
+
+        if (!(error instanceof HttpErrorResponse)) {
+            this.zone.run(() => {
+                this.notificationService.danger({
+                    messageKeyTrad: 'ERROR.UNKNOW',
+                });
+            });
+        }
+    }
+}
+
+
+================================================
+File: _core/error-handler/http-error-handler.interceptor.ts
+================================================
+import {
+	HttpErrorResponse,
+	HttpEvent,
+	HttpHandler,
+	HttpInterceptor,
+	HttpRequest,
+	HttpStatusCode,
+} from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { NotificationHandler } from '@core/notification/use-cases/notification.handler';
+import {
+	MonoTypeOperatorFunction,
+	Observable,
+	OperatorFunction,
+	throwError,
+	timer,
+} from 'rxjs';
+import { catchError, retry } from 'rxjs/operators';
+import { AuthService } from '../../services/_core/auth/auth.service';
+import { Router } from '@angular/router';
+
+function retryWithDelay(count: number): MonoTypeOperatorFunction<unknown> {
+	return retry({
+		count,
+		delay: (error, retryCount) => timer(retryCount * 1000),
+	});
+}
+
+@Injectable()
+export class HttpErrorInterceptor implements HttpInterceptor {
+	private readonly MAX_RETRIES = 2;
+	private readonly RETRY_STATUS_CODES = [
+		HttpStatusCode.GatewayTimeout,
+		HttpStatusCode.ServiceUnavailable,
+		HttpStatusCode.BadGateway,
+	];
+
+	constructor(
+		private notificationService: NotificationHandler,
+		private authService: AuthService,
+		private router: Router
+	) {}
+
+	intercept(
+		request: HttpRequest<any>,
+		next: HttpHandler
+	): Observable<HttpEvent<any>> {
+		return next.handle(request).pipe(
+			retry({
+				count: this.MAX_RETRIES,
+				delay: (error, retryCount) => {
+					if (
+						error instanceof HttpErrorResponse &&
+						this.RETRY_STATUS_CODES.includes(error.status)
+					) {
+						// Exponential backoff retry delay
+						const retryDelay = Math.pow(2, retryCount) * 1000;
+						return timer(retryDelay);
+					}
+					return throwError(() => error);
+				},
+			}),
+			catchError((error: HttpErrorResponse) => {
+				return this.handleError(error, request);
+			})
+		);
+	}
+
+	private handleError(
+		error: HttpErrorResponse,
+		request: HttpRequest<any>
+	): Observable<never> {
+		// Don't show errors for cancelled requests
+		if (
+			error instanceof HttpErrorResponse &&
+			error.status === 0 &&
+			error.error instanceof ProgressEvent
+		) {
+			// Request was cancelled
+			return throwError(() => error);
+		}
+
+		let errorMessage = this.getErrorMessage(error);
+		const errorResponse = {
+			statusCode: error.status,
+			message: errorMessage,
+			url: request.url,
+			timestamp: new Date().toISOString(),
+			details: this.getErrorDetails(error),
+		};
+
+		// Log error for debugging
+		console.error('HTTP Error:', errorResponse);
+
+		// Handle specific status codes
+		switch (error.status) {
+			case HttpStatusCode.Unauthorized:
+				this.handleUnauthorized();
+				break;
+
+			case HttpStatusCode.Forbidden:
+				this.handleForbidden();
+				break;
+
+			case HttpStatusCode.NotFound:
+				this.handleNotFound(errorMessage);
+				break;
+
+			case HttpStatusCode.BadRequest:
+				this.handleBadRequest(error, errorMessage);
+				break;
+
+			case HttpStatusCode.UnprocessableEntity:
+				this.handleValidationError(error);
+				break;
+
+			case 0:
+				this.handleNetworkError();
+				break;
+
+			case HttpStatusCode.InternalServerError:
+				this.handleServerError();
+				break;
+
+			default:
+				this.handleGenericError(errorMessage);
+				break;
+		}
+
+		return throwError(() => errorResponse);
+	}
+
+	private getErrorMessage(error: HttpErrorResponse): string {
+		if (error.error instanceof ErrorEvent) {
+			// Client-side error
+			return error.error.message;
+		}
+
+		// Server-side error
+		if (typeof error.error === 'string') {
+			return error.error;
+		}
+
+		if (error.error?.message) {
+			return error.error.message;
+		}
+
+		if (Array.isArray(error.error?.errors)) {
+			return error.error.errors.map((e: any) => e.message).join('. ');
+		}
+
+		return error.message;
+	}
+
+	private getErrorDetails(error: HttpErrorResponse): any {
+		if (error.error instanceof ErrorEvent) {
+			return {
+				errorType: 'Client Error',
+				stack: error.error.error?.stack,
+			};
+		}
+
+		return {
+			errorType: 'Server Error',
+			error: error.error,
+		};
+	}
+
+	private handleUnauthorized(): void {
+		this.notificationService.danger({
+			messageKeyTrad: 'ERROR.SESSION_EXPIRED',
+			duration: 5000,
+		});
+		this.authService.logout();
+		this.router.navigate(['/login']);
+	}
+
+	private handleForbidden(): void {
+		this.notificationService.danger({
+			messageKeyTrad: 'ERROR.FORBIDDEN',
+			duration: 5000,
+		});
+		this.router.navigate(['/dashboard']);
+	}
+
+	private handleNotFound(message: string): void {
+		this.notificationService.warning({
+			messageKeyTrad: message || 'ERROR.NOT_FOUND',
+			duration: 5000,
+		});
+	}
+
+	private handleBadRequest(error: HttpErrorResponse, message: string): void {
+		if (error.error?.errors && Array.isArray(error.error.errors)) {
+			// Handle validation errors
+			error.error.errors.forEach((validationError: any) => {
+				this.notificationService.warning({
+					messageKeyTrad: validationError.message,
+					duration: 5000,
+				});
+			});
+		} else {
+			this.notificationService.warning({
+				messageKeyTrad: message || 'ERROR.BAD_REQUEST',
+				duration: 5000,
+			});
+		}
+	}
+
+	private handleValidationError(error: HttpErrorResponse): void {
+		const validationErrors = error.error?.errors || [];
+		validationErrors.forEach((validationError: any) => {
+			this.notificationService.warning({
+				messageKeyTrad: validationError.message,
+				duration: 5000,
+			});
+		});
+	}
+
+	private handleNetworkError(): void {
+		this.notificationService.danger({
+			messageKeyTrad: 'ERROR.NETWORK',
+			duration: 5000,
+		});
+	}
+
+	private handleServerError(): void {
+		this.notificationService.danger({
+			messageKeyTrad: 'ERROR.SERVER',
+			duration: 5000,
+		});
+	}
+
+	private handleGenericError(message: string): void {
+		this.notificationService.danger({
+			messageKeyTrad: message || 'ERROR.GENERIC',
+			duration: 5000,
+		});
+	}
+}
+
+
+================================================
+File: _core/notification/domain/models/notification.model.ts
+================================================
+export interface Notification {
+    id: string;
+    type: 'info' | 'success' | 'warning' | 'danger';
+    messageKeyTrad: string;
+    duration?: number;
+    autoDismiss?: boolean;
+}
+
+
+================================================
+File: _core/notification/use-cases/notification.handler.ts
+================================================
+import { Notification } from '@core/notification/domain/models/notification.model';
+import { NOTIFICATION_DURATION } from '@utils/constants';
+import { BehaviorSubject, of, timer } from 'rxjs';
+import { filter, switchMap, takeUntil, tap } from 'rxjs/operators';
+
+/**
+ * Classe de service de notification.
+ * Gère la création et la suppression des notifications.
+ */
+export class NotificationHandler {
+    /**
+     * Un BehaviorSubject qui émet un tableau de notifications.
+     */
+    public notifications$ = new BehaviorSubject<Notification[]>([]);
+
+    constructor() {}
+
+    /**
+     * Crée une notification avec un type et un contenu spécifique.
+     * @param {Notification['type']} type - Le type de la notification ('info' | 'success' | 'warning' | 'danger').
+     * @param {Omit<Notification, 'id' | 'type'>} notification - Les détails de la notification (Type Notification sans id et type).
+     */
+    private createOne(
+        type: Notification['type'],
+        notification: Omit<Notification, 'id' | 'type'>
+    ) {
+        if (!notification) return;
+
+        const notificationItem: Required<Notification> = {
+            id: `notification-${Date.now()}`,
+            type,
+            duration: NOTIFICATION_DURATION,
+            autoDismiss: true,
+            ...notification,
+        };
+
+        of(notificationItem)
+            .pipe(
+                tap(notification =>
+                    this.notifications$.next([
+                        ...this.notifications$.value,
+                        notification,
+                    ])
+                ),
+                filter(notification => notification.autoDismiss),
+                switchMap(() =>
+                    timer(notificationItem.duration).pipe(
+                        takeUntil(
+                            this.notifications$.pipe(
+                                filter(
+                                    notifications =>
+                                        !notifications.includes(
+                                            notificationItem
+                                        )
+                                )
+                            )
+                        )
+                    )
+                ),
+                tap(() => this.remove(notificationItem))
+            )
+            .subscribe();
+    }
+
+    /**
+     * Crée une notification de type 'info'.
+     * @param {Omit<Notification, 'id' | 'type'>} notification - Les détails de la notification (Type Notification sans id et type).
+     */
+    info(notification: Omit<Notification, 'id' | 'type'>): void {
+        this.createOne('info', notification);
+    }
+
+    /**
+     * Crée une notification de type 'success'.
+     * @param {Omit<Notification, 'id' | 'type'>} notification - Les détails de la notification (Type Notification sans id et type).
+     */
+    success(notification: Omit<Notification, 'id' | 'type'>): void {
+        this.createOne('success', notification);
+    }
+
+    /**
+     * Crée une notification de type 'warning'.
+     * @param {Omit<Notification, 'id' | 'type'>} notification - Les détails de la notification (Type Notification sans id et type).
+     */
+    warning(notification: Omit<Notification, 'id' | 'type'>): void {
+        this.createOne('warning', notification);
+    }
+
+    /**
+     * Crée une notification de type 'danger'.
+     * @param {Omit<Notification, 'id' | 'type'>} notification - Les détails de la notification (Type Notification sans id et type).
+     */
+    danger(notification: Omit<Notification, 'id' | 'type'>): void {
+        this.createOne('danger', notification);
+    }
+
+    /**
+     * Supprime une notification spécifique.
+     * @param {Notification} notification - La notification à supprimer.
+     */
+    remove(notification: Notification) {
+        if (!notification) return;
+
+        this.notifications$.next(
+            this.notifications$.value.filter(
+                item => item.id !== notification.id
+            )
+        );
+    }
+}
+
+
+================================================
+File: _core/utils/constants.ts
+================================================
+export const NOTIFICATION_DURATION: number = 8000;
+export const MAX_LENGTH_PAGING: number = 20;
+
 
 ================================================
 File: app.component.html
@@ -98,50 +1517,116 @@ describe('AppComponent', () => {
 File: app.component.ts
 ================================================
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { AuthInterceptor } from './guards/auth.interceptor';
+import { Component, ErrorHandler } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { RouteLoggingService } from './services/_core/route-logging.service';
+import { filter } from 'rxjs';
+import { TEST_View } from '../environments/environment.development';
+import { AppErrorHandler } from '@core/error-handler/error-handler';
+import { AuthInterceptor } from '@core/auth/interception/auth.interceptor';
+import { NotificationHandler } from '@core/notification/use-cases/notification.handler';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
+import { NOTIFICATION_DURATION } from '@core/utils/constants';
+import { SnackbarComponent } from '@ui/shared/components/snackbar/snackbar.component';
+import { Notification } from '@core/notification/domain/models/notification.model';
 
 @Component({
-  selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'], // Fix typo: `styleUrl` to `styleUrls`
-  providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-  ],
+	selector: 'app-root',
+	imports: [RouterOutlet],
+	templateUrl: './app.component.html',
+	styleUrls: ['./app.component.scss'], // Fix typo: `styleUrl` to `styleUrls`
 })
 export class AppComponent {
-  title = 'kyl';
+	constructor(
+		private router: Router,
+		private logger: RouteLoggingService,
+		private snackBar$: MatSnackBar,
+		private notificationService: NotificationHandler
+	) {
+		if (TEST_View.routes_log) {
+			console.log('🚀 Routes Logging Enabled');
+			this.setupRouteLogging();
+		}
+
+		this.notificationService.notifications$.subscribe(
+			(notifications: Notification[]) => {
+				if (notifications) {
+					notifications.forEach((notification: Notification) => {
+						const config: MatSnackBarConfig = {
+							duration: notification?.duration ?? NOTIFICATION_DURATION,
+							panelClass: [
+								'notification',
+								`notification-${notification?.type}`,
+							],
+							horizontalPosition: 'right',
+							verticalPosition: 'top',
+							data: notification,
+						};
+						this.snackBar$.openFromComponent(SnackbarComponent, config);
+					});
+				}
+			}
+		);
+	}
+
+	private setupRouteLogging() {
+		this.router.events
+			.pipe(filter((event) => event instanceof NavigationEnd))
+			.subscribe((event: any) => {
+				this.logger.logRouteHit(`Navigation to: ${event.url}`);
+			});
+	}
 }
 
 
 ================================================
 File: app.config.ts
 ================================================
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter, withHashLocation } from '@angular/router';
+import {
+	ApplicationConfig,
+	ErrorHandler,
+	provideZoneChangeDetection,
+} from '@angular/core';
+import {
+	provideRouter,
+	withComponentInputBinding,
+	withHashLocation,
+} from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient } from '@angular/common/http';
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { firebaseConfig } from '../environments/firebaseConfig';
 import { getAuth, provideAuth } from '@angular/fire/auth';
+import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { AppErrorHandler } from '@core/error-handler/error-handler';
+import { NotificationHandler } from '@core/notification/use-cases/notification.handler';
+import { HttpErrorInterceptor } from '@core/error-handler/http-error-handler.interceptor';
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(
-      routes
-      // withHashLocation()
-    ),
-    provideAnimations(),
-    provideAnimationsAsync(),
-    provideHttpClient(),
-    provideFirebaseApp(() => initializeApp(firebaseConfig)),
-    provideAuth(() => getAuth()),
-  ],
+	providers: [
+		provideZoneChangeDetection({ eventCoalescing: true }),
+		provideRouter(routes, withComponentInputBinding()),
+		provideAnimations(),
+		provideAnimationsAsync(),
+		provideHttpClient(),
+		provideFirebaseApp(() => initializeApp(firebaseConfig)),
+		provideAuth(() => getAuth()),
+		provideFirestore(() => getFirestore()), // Add Firestore provider
+		// {
+		// 	provide: ErrorHandler,
+		// 	useClass: AppErrorHandler,
+		// },
+		{
+			provide: HTTP_INTERCEPTORS,
+			useClass: HttpErrorInterceptor,
+			multi: true,
+		},
+		{
+			provide: NotificationHandler,
+		},
+	],
 };
 
 
@@ -149,1036 +1634,65 @@ export const appConfig: ApplicationConfig = {
 File: app.routes.ts
 ================================================
 import { Routes } from '@angular/router';
-import { AuthGuard } from './guards/auth.guard';
-import { NonAuthGuard } from './guards/non-auth.guard';
-import { LayoutComponent } from './pages/layout/layout.component';
+
+import { LayoutComponent } from '../ui/pages/layout/layout.component';
+import { NonAuthGuard } from '@core/auth/guard/non-auth.guard';
+import { AuthGuard } from '@core/auth/guard/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  {
-    path: 'login',
-    loadComponent: () =>
-      import('./pages/login/login.component').then((m) => m.LoginComponent),
-    canActivate: [NonAuthGuard],
-  },
-  {
-    path: 'dashboard',
-    component: LayoutComponent,
-    canActivate: [AuthGuard],
-    children: [
-      {
-        path: '',
-        loadComponent: () =>
-          import('./pages/layout/layout.component').then(
-            (m) => m.LayoutComponent
-          ),
-      },
-    ],
-  },
-  { path: '**', redirectTo: 'login' },
+	{ path: '', redirectTo: 'login', pathMatch: 'full' },
+	{
+		path: 'login',
+		loadComponent: () =>
+			import('../ui/pages/login/login.component').then((m) => m.LoginComponent),
+		canActivate: [NonAuthGuard],
+	},
+	{
+		path: 'dashboard',
+		component: LayoutComponent,
+		canActivate: [AuthGuard],
+		children: [
+			{
+				path: '',
+				loadComponent: () =>
+					import('../ui/pages/layout/layout.component').then(
+						(m) => m.LayoutComponent
+					),
+			},
+			{
+				path: 'profile',
+				loadComponent: () =>
+					import('../ui/pages/profile/profile.component').then(
+						(m) => m.ProfileComponent
+					),
+			},
+			{
+				path: 'errors',
+				loadComponent: () =>
+					import('../ui/pages/error-test/error-test.component').then(
+						(m) => m.ErrorTestComponent
+					),
+			},
+		],
+	},
+	{ path: '**', redirectTo: 'login' },
 ];
 
 
 ================================================
-File: guards/auth.guard.ts
+File: interface/contact.interface.ts
 ================================================
-import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { Observable, map, take } from 'rxjs';
-import { AuthService } from '../services/_core/auth/auth.service';
-
-@Injectable({
-  providedIn: 'root',
-})
-export class AuthGuard implements CanActivate {
-  constructor(private authService: AuthService, private router: Router) {}
-
-  canActivate(): Observable<boolean> {
-    return this.authService.user$.pipe(
-      take(1),
-      map((user) => {
-        const isAuthenticated = !!user;
-        if (!isAuthenticated) {
-          this.router.navigate(['/login']);
-        }
-        return isAuthenticated;
-      })
-    );
-  }
-}
-
-
-================================================
-File: guards/auth.interceptor.ts
-================================================
-import { Injectable } from '@angular/core';
-import {
-  HttpInterceptor,
-  HttpRequest,
-  HttpHandler,
-  HttpEvent,
-} from '@angular/common/http';
-import { catchError, Observable, switchMap, throwError } from 'rxjs';
-import { TokenService } from '../services/_core/token/token.service';
-import { AuthService } from '../services/_core/auth/auth.service';
-
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  constructor(
-    private authService: AuthService,
-    private tokenService: TokenService
-  ) {}
-
-  intercept(
-    req: HttpRequest<any>,
-    next: HttpHandler
-  ): Observable<HttpEvent<any>> {
-    const refreshToken = this.tokenService.getIdToken();
-
-    // If there's an access token, attach it to the request headers
-    if (refreshToken) {
-      const clonedRequest = req.clone({
-        headers: req.headers.set('Authorization', `Bearer ${refreshToken}`),
-      });
-      return next.handle(clonedRequest).pipe(
-        catchError((error) => {
-          // If the token is expired (401 error), refresh the token and retry the request
-          if (error.status === 401) {
-            return this.handle401Error(req, next);
-          }
-          return throwError(() => error);
-        })
-      );
-    }
-
-    // If no token, proceed with the request as is
-    return next.handle(req);
-  }
-
-  private handle401Error(
-    req: HttpRequest<any>,
-    next: HttpHandler
-  ): Observable<HttpEvent<any>> {
-    return this.tokenService.refreshIdToken().pipe(
-      switchMap(() => {
-        // Retry the request with the new access token
-        const newIdToken = this.tokenService.getIdToken();
-        if (newIdToken) {
-          const clonedRequest = req.clone({
-            headers: req.headers.set('Authorization', `Bearer ${newIdToken}`),
-          });
-          return next.handle(clonedRequest);
-        }
-        return next.handle(req);
-      }),
-      catchError((error) => {
-        // If refresh token fails, logout the user
-        this.authService.logout();
-        return throwError(() => error);
-      })
-    );
-  }
-}
-
-
-================================================
-File: guards/non-auth.guard.ts
-================================================
-import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { Observable, map, take } from 'rxjs';
-import { AuthService } from '../services/_core/auth/auth.service';
-
-@Injectable({
-  providedIn: 'root',
-})
-export class NonAuthGuard implements CanActivate {
-  constructor(private authService: AuthService, private router: Router) {}
-
-  canActivate(): Observable<boolean> {
-    return this.authService.user$.pipe(
-      take(1),
-      map((user) => {
-        if (!user) {
-          return true;
-        }
-
-        this.router.navigate(['/dashboard']);
-        return false;
-      })
-    );
-  }
-}
-
-
-================================================
-File: pages/layout/layout.component.html
-================================================
-<div
-  class="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900"
->
-  <!-- Overlay for mobile -->
-  <div
-    (click)="toggleSidenav()"
-    [class.hidden]="!isSidenavOpen"
-    class="fixed inset-0 bg-black bg-opacity-70 lg:hidden z-40 backdrop-blur-sm"
-  ></div>
-
-  <!-- Sidebar -->
-  <aside
-    [class.translate-x-0]="isSidenavOpen"
-    [class.-translate-x-full]="!isSidenavOpen"
-    class="fixed top-0 left-0 h-full w-64 bg-gray-800/50 backdrop-blur-lg border-r border-gray-700/50 text-white z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0"
-  >
-    <!-- Logo/Title with AI animation -->
-    <div
-      class="h-16 flex items-center justify-between px-6 bg-gray-900/50 border-b border-gray-700/50"
-    >
-      <div class="flex items-center space-x-3">
-        <div class="relative h-8 w-8">
-          <div
-            class="absolute inset-0 bg-blue-500/20 rounded-full animate-pulse"
-          ></div>
-          <div
-            class="absolute inset-1 bg-blue-500/40 rounded-full animate-pulse [animation-delay:0.2s]"
-          ></div>
-          <div
-            class="absolute inset-2 bg-blue-500/60 rounded-full animate-pulse [animation-delay:0.4s]"
-          ></div>
-        </div>
-        <span
-          class="text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent"
-        >
-          AI Analysis
-        </span>
-      </div>
-      <button
-        (click)="toggleSidenav()"
-        class="lg:hidden text-gray-400 hover:text-white transition-colors"
-      >
-        <svg
-          class="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="mt-6 px-4">
-      <div class="space-y-2">
-        <a
-          routerLink="/dashboard/aichat"
-          routerLinkActive="bg-blue-600/20 border-blue-500/50"
-          class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg hover:bg-blue-600/10 transition-all duration-200 border border-transparent hover:border-blue-500/30"
-        >
-          <svg
-            class="w-5 h-5 mr-3 text-blue-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-          <span class="relative">
-            AI Chat
-            <div
-              class="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-blue-400 rounded-full animate-pulse"
-            ></div>
-          </span>
-        </a>
-
-        <!-- Similar styling for other navigation items -->
-        <a
-          routerLink="/dashboard/users"
-          routerLinkActive="bg-blue-600/20 border-blue-500/50"
-          class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg hover:bg-blue-600/10 transition-all duration-200 border border-transparent hover:border-blue-500/30"
-        >
-          <svg
-            class="w-5 h-5 mr-3 text-blue-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
-          </svg>
-          Utilisateurs
-        </a>
-
-        <!-- More navigation items... -->
-      </div>
-    </nav>
-
-    <!-- User profile -->
-    <div
-      class="absolute bottom-0 w-full bg-gray-900/50 p-4 border-t border-gray-700/50"
-    >
-      <div class="flex items-center">
-        <div
-          class="relative flex-shrink-0 cursor-pointer group"
-          routerLink="/dashboard/profil"
-        >
-          <div
-            class="w-8 h-8 bg-blue-500/20 rounded-full group-hover:animate-pulse"
-          ></div>
-          <svg
-            class="w-8 h-8 text-blue-400 absolute inset-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <div class="ml-3">
-          <p class="text-sm font-medium text-gray-300">{{ getUserName() }}</p>
-          <button
-            (click)="logout()"
-            class="text-xs text-blue-400 hover:text-blue-300 transition-colors duration-200"
-          >
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main content -->
-  <div class="lg:pl-64 flex flex-col min-h-screen">
-    <!-- Header -->
-    <header
-      class="h-16 bg-gray-800/50 backdrop-blur-lg border-b border-gray-700/50 fixed top-0 right-0 left-0 z-30 lg:left-64"
-    >
-      <div class="h-full px-6 flex items-center justify-between">
-        <div class="flex items-center">
-          <button
-            (click)="toggleSidenav()"
-            class="lg:hidden mr-4 text-gray-400 hover:text-white transition-colors"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
-          <h1 class="text-xl text-gray-100 font-medium">
-            {{ getCurrentRoute() }}
-          </h1>
-        </div>
-      </div>
-    </header>
-
-    <!-- Page content -->
-    <main class="flex-1 sm:p-6 mt-16">
-      <!-- Neural network animation background -->
-      <div
-        class="absolute inset-0 overflow-hidden opacity-10 pointer-events-none"
-      >
-        <div
-          class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)]"
-        ></div>
-        <div
-          class="absolute w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(155,188,246,0.05)_50%,transparent_75%)] bg-[length:10px_10px] animate-[grid-move_20s_linear_infinite]"
-        ></div>
-      </div>
-      <router-outlet></router-outlet>
-    </main>
-  </div>
-</div>
-
-
-================================================
-File: pages/layout/layout.component.spec.ts
-================================================
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { LayoutComponent } from './layout.component';
-
-describe('LayoutComponent', () => {
-  let component: LayoutComponent;
-  let fixture: ComponentFixture<LayoutComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [LayoutComponent]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(LayoutComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-});
-
-
-================================================
-File: pages/layout/layout.component.ts
-================================================
-import { Component } from '@angular/core';
-import { Router, RouterModule, RouterOutlet } from '@angular/router';
-import { AuthService } from '../../services/_core/auth/auth.service';
-import { User } from '@angular/fire/auth';
-
-@Component({
-  selector: 'app-layout',
-  imports: [RouterOutlet, RouterModule],
-  templateUrl: './layout.component.html',
-  styleUrl: './layout.component.scss',
-})
-export class LayoutComponent {
-  isSidenavOpen: boolean = false;
-
-  constructor(private authService: AuthService, private router: Router) {}
-
-  toggleSidenav(): void {
-    this.isSidenavOpen = !this.isSidenavOpen;
-  }
-
-  getUserName(): string {
-    let userEmail = 'Anonyme';
-    this.authService.getCurrentUser().subscribe({
-      next: (user) => {
-        if (user?.email) {
-          userEmail = user.email;
-        }
-      },
-      error: () => {
-        userEmail = 'Anonyme';
-      },
-    });
-    return userEmail;
-  }
-
-  getCurrentRoute(): string {
-    const currentUrl = this.router.url;
-    const segments = currentUrl.split('/');
-    const lastSegment = segments[segments.length - 1];
-    const routeMap: { [key: string]: string } = {
-      dashboard: 'Dashboard',
-      profil: 'Profil',
-      formations: 'Formations',
-      kyls: 'KYLs',
-      credits: 'Crédits',
-      demo: 'Démo',
-    };
-
-    return routeMap[lastSegment] || 'Dashboard';
-  }
-
-  logout(): void {
-    this.authService.logout().subscribe(() => {
-      this.router.navigate(['/login']);
-    });
-  }
-}
-
-
-================================================
-File: pages/login/login.component.html
-================================================
-<div
-  class="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8"
->
-  <div class="sm:mx-auto sm:w-full sm:max-w-md">
-    <!-- AI-themed animated logo container -->
-    <div class="relative h-32 sm:h-48 mx-auto mb-8">
-      <div
-        class="absolute inset-0 bg-blue-500/20 rounded-full animate-pulse"
-      ></div>
-      <div
-        class="absolute inset-4 bg-blue-500/40 rounded-full animate-pulse [animation-delay:0.2s]"
-      ></div>
-      <div
-        class="absolute inset-8 bg-blue-500/60 rounded-full animate-pulse [animation-delay:0.4s]"
-      ></div>
-      <div
-        class="absolute inset-0 h-full w-full flex items-center justify-center"
-      >
-        <span class="text-blue-500 text-4xl font-bold">AI</span>
-      </div>
-    </div>
-
-    <h2
-      class="text-center text-4xl md:text-5xl font-extrabold text-white animate-fade-in"
-    >
-      AI Analysis Portal
-    </h2>
-    <p class="mt-4 text-center text-base md:text-lg text-gray-400">
-      Access your AI insights or
-      <a
-        routerLink="/register"
-        class="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-200 underline decoration-2 decoration-blue-400/30 hover:decoration-blue-300"
-      >
-        create a new account
-      </a>
-    </p>
-  </div>
-
-  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-    <div
-      class="bg-gray-800/50 backdrop-blur-lg py-8 px-4 shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 sm:rounded-2xl sm:px-10 border border-gray-700/50"
-    >
-      <!-- Neural network animation background -->
-      <div class="absolute inset-0 overflow-hidden rounded-2xl opacity-10">
-        <div
-          class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)]"
-        ></div>
-        <div
-          class="absolute w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(155,188,246,0.05)_50%,transparent_75%)] bg-[length:10px_10px] animate-[grid-move_20s_linear_infinite]"
-        ></div>
-      </div>
-
-      <form
-        [formGroup]="loginForm"
-        (ngSubmit)="onSubmit()"
-        class="space-y-6 relative"
-      >
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-300">
-            Email Interface
-          </label>
-          <div class="mt-1 relative">
-            <input
-              id="email"
-              type="email"
-              formControlName="email"
-              required
-              class="appearance-none block w-full px-3 py-2.5 bg-gray-900/50 border border-gray-600 text-gray-300 rounded-lg shadow-inner placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 sm:text-sm"
-            />
-            <div
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"
-            ></div>
-          </div>
-          <div
-            *ngIf="
-              loginForm.get('email')?.touched && loginForm.get('email')?.invalid
-            "
-            class="mt-1 text-xs text-red-400 animate-shake"
-          >
-            Invalid email format detected
-          </div>
-        </div>
-
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-300">
-            Security Key
-          </label>
-          <div class="mt-1 relative">
-            <input
-              id="password"
-              type="password"
-              formControlName="password"
-              required
-              class="appearance-none block w-full px-3 py-2.5 bg-gray-900/50 border border-gray-600 text-gray-300 rounded-lg shadow-inner placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 sm:text-sm"
-            />
-            <div
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"
-            ></div>
-          </div>
-          <div
-            *ngIf="
-              loginForm.get('password')?.touched &&
-              loginForm.get('password')?.invalid
-            "
-            class="mt-1 text-xs text-red-400 animate-shake"
-          >
-            Security key required
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              id="remember"
-              formControlName="remember"
-              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label for="remember" class="ml-2 block text-sm text-gray-300">
-              Remember session
-            </label>
-          </div>
-          <a href="#" class="text-sm text-blue-400 hover:text-blue-300"
-            >Reset key?</a
-          >
-        </div>
-
-        <div>
-          <button
-            type="submit"
-            [disabled]="loginForm.invalid || isLoading"
-            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
-          >
-            <svg
-              *ngIf="isLoading"
-              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <span
-              class="group-hover:tracking-wider transition-all duration-200"
-            >
-              {{ isLoading ? "Initializing..." : "Initialize Session" }}
-            </span>
-          </button>
-        </div>
-
-        <div class="relative my-6">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-600"></div>
-          </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-gray-800 text-gray-400">Or continue with</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          (click)="signInWithGoogle()"
-          class="w-full flex items-center justify-center gap-3 py-2 px-4 border border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-300 bg-gray-900/50 hover:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <img
-            src="https://www.google.com/favicon.ico"
-            alt="Google"
-            class="w-5 h-5"
-          />
-          Sign in with Google
-        </button>
-
-        <div
-          *ngIf="error"
-          class="mt-4 text-sm text-red-400 text-center bg-red-900/20 border border-red-900/50 p-3 rounded-lg animate-shake"
-        >
-          {{ error }}
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-
-================================================
-File: pages/login/login.component.scss
-================================================
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  75% {
-    transform: translateX(5px);
-  }
-}
-
-@keyframes grid-move {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 50px 50px;
-  }
-}
-
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-
-================================================
-File: pages/login/login.component.spec.ts
-================================================
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { LoginComponent } from './login.component';
-
-describe('LoginComponent', () => {
-  let component: LoginComponent;
-  let fixture: ComponentFixture<LoginComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [LoginComponent]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(LoginComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-});
-
-
-================================================
-File: pages/login/login.component.ts
-================================================
-import { Component, NgZone } from '@angular/core';
-import {
-  FormGroup,
-  FormBuilder,
-  Validators,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../services/_core/auth/auth.service';
-import { GoogleAuthService } from '../../services/auth/google.service';
-import { finalize } from 'rxjs';
-
-@Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
-})
-export class LoginComponent {
-  loginForm: FormGroup;
-  isLoading = false;
-  error: string | null = null;
-
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private googleAuthService: GoogleAuthService,
-    private router: Router,
-    private ngZone: NgZone
-  ) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      remember: [false],
-    });
-    // Check if already authenticated
-    this.authService.user$.subscribe((user) => {
-      if (user) {
-        this.router.navigate(['/dashboard']);
-      }
-    });
-  }
-
-  onSubmit(): void {
-    if (this.loginForm.valid && !this.isLoading) {
-      this.isLoading = true;
-      this.error = null;
-
-      const email = this.loginForm.get('email')?.value;
-      const password = this.loginForm.get('password')?.value;
-
-      this.authService
-        .login(email, password)
-        .pipe(
-          finalize(() => {
-            this.isLoading = false;
-          })
-        )
-        .subscribe({
-          next: () => {
-            // Using NgZone to ensure Angular detects the changes
-            this.ngZone.run(() => {
-              this.router.navigate(['/dashboard']).then(() => {
-                console.log('Navigation attempted from component');
-              });
-            });
-          },
-          error: (err) => {
-            this.error =
-              err.error?.message || 'Login failed. Please try again.';
-          },
-        });
-    }
-  }
-
-  async signInWithGoogle() {
-    try {
-      this.isLoading = true;
-      await this.googleAuthService.signInWithGoogle();
-      await this.router.navigate(['/dashboard']);
-    } catch (error) {
-      this.error = 'Google sign-in failed. Please try again.';
-    } finally {
-      this.isLoading = false;
-    }
-  }
-}
-
-
-================================================
-File: pages/profil/profil.component.html
-================================================
-<div class="p-3 sm:p-6 max-w-4xl mx-auto">
-  <h1 class="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">
-    Profile Settings
-  </h1>
-
-  <div
-    class="bg-gray-800/50 backdrop-blur-lg rounded-lg shadow-lg border border-gray-700/50"
-  >
-    <!-- User Profile Section -->
-    <div class="p-6 flex flex-col items-center">
-      <!-- Profile Picture -->
-      <div class="relative mb-4">
-        <img
-          [src]="
-            user?.photoURL ||
-            'https://ui-avatars.com/api/?background=0D8ABC&color=fff'
-          "
-          [alt]="user?.displayName || 'Profile'"
-          class="w-24 h-24 rounded-full border-4 border-blue-500/30"
-        />
-        <div
-          class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-4 border-gray-800"
-        ></div>
-      </div>
-
-      <!-- User Info -->
-      <h2 class="text-xl font-semibold text-white mb-1">
-        {{ user?.displayName || "Anonymous User" }}
-      </h2>
-      <p class="text-blue-400 mb-4">{{ user?.email }}</p>
-
-      <!-- Account Details -->
-      <div class="w-full max-w-md space-y-4 mt-6">
-        <div class="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
-          <h3 class="text-lg font-medium text-white mb-3">
-            Account Information
-          </h3>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-400"
-                >Email</label
-              >
-              <p class="text-white">{{ user?.email }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-400"
-                >Account Created</label
-              >
-              <p class="text-white">
-                {{ user?.metadata?.creationTime | date : "medium" }}
-              </p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-400"
-                >Last Sign In</label
-              >
-              <p class="text-white">
-                {{ user?.metadata?.lastSignInTime | date : "medium" }}
-              </p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-400"
-                >Email Verified</label
-              >
-              <p class="text-white flex items-center gap-2">
-                <span
-                  class="w-3 h-3 rounded-full"
-                  [class]="user?.emailVerified ? 'bg-green-500' : 'bg-red-500'"
-                >
-                </span>
-                {{ user?.emailVerified ? "Verified" : "Not Verified" }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex flex-col sm:flex-row gap-3 mt-6">
-          <button
-            (click)="signOut()"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            Sign Out
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-================================================
-File: pages/profil/profil.component.spec.ts
-================================================
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { ProfilComponent } from './profil.component';
-
-describe('ProfilComponent', () => {
-  let component: ProfilComponent;
-  let fixture: ComponentFixture<ProfilComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ProfilComponent]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(ProfilComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-});
-
-
-================================================
-File: pages/profil/profil.component.ts
-================================================
-import { Component } from '@angular/core';
-import {
-  FormGroup,
-  FormBuilder,
-  Validators,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../services/_core/auth/auth.service';
-import { GoogleAuthService } from '../../services/auth/google.service';
-
-@Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
-})
-export class LoginComponent {
-  loginForm: FormGroup;
-  isLoading = false;
-  error: string | null = null;
-
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private googleAuthService: GoogleAuthService,
-    private router: Router
-  ) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      remember: [false],
-    });
-  }
-
-  onSubmit(): void {
-    if (this.loginForm.valid) {
-      this.isLoading = true;
-      this.error = null;
-
-      this.authService
-        .login(
-          this.loginForm.get('email')?.value,
-          this.loginForm.get('password')?.value
-        )
-        .subscribe({
-          next: () => {
-            this.isLoading = false;
-            this.router.navigate(['/dashboard']);
-          },
-          error: (err) => {
-            this.isLoading = false;
-            this.error =
-              err.error?.message || 'Login failed. Please try again.';
-          },
-        });
-    }
-  }
-
-  async signInWithGoogle() {
-    try {
-      await this.googleAuthService.signInWithGoogle();
-      this.router.navigate(['/dashboard']);
-    } catch (error) {
-      this.error = 'Google sign-in failed. Please try again.';
-    }
-  }
+export interface IContact {
+	id: string;
+	firstName: string;
+	lastName: string;
+	email: string;
+	phone: string;
+	address: string;
+	postalCode: string;
+	city: string;
+	country: string;
+	message: string;
 }
 
 
@@ -1289,161 +1803,272 @@ describe('AuthService', () => {
 File: services/_core/auth/auth.service.ts
 ================================================
 import { Injectable } from '@angular/core';
+import {
+	Auth,
+	GoogleAuthProvider,
+	signInWithPopup,
+	User,
+} from '@angular/fire/auth';
 import { Router } from '@angular/router';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { catchError, tap, finalize } from 'rxjs/operators';
+import {
+	BehaviorSubject,
+	firstValueFrom,
+	from,
+	Observable,
+	throwError,
+} from 'rxjs';
+import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { RestService } from '../rest/rest.service';
-import { User } from '@angular/fire/auth';
-import { environment } from '../../../../../environments/environment';
+import { TokenService } from '../token/token.service';
 
 @Injectable({
-  providedIn: 'root',
+	providedIn: 'root',
 })
 export class AuthService {
-  private userSubject = new BehaviorSubject<User | undefined>(undefined);
-  private refreshTokenTimeout?: any;
-  private isRefreshing = false;
-  private initialCheckDone = false;
-  readonly user$ = this.userSubject.asObservable();
+	private userSubject = new BehaviorSubject<User | undefined>(undefined);
+	private refreshTokenTimeout?: any;
+	private isRefreshing = false;
+	private initialCheckDone = false;
+	readonly user$ = this.userSubject.asObservable();
 
-  constructor(private restService: RestService, private router: Router) {
-    // Only check once when service is initialized
-    if (!this.initialCheckDone) {
-      this.checkAuthStatus();
-    }
-  }
+	constructor(
+		private restService: RestService,
+		private router: Router,
+		private tokenService: TokenService,
+		private auth: Auth
+	) {
+		this.checkAuthStatus();
+		// Listen to Firebase auth state changes
+		this.auth.onAuthStateChanged((user) => {
+			if (user) {
+				// Get fresh tokens when auth state changes
+				this.refreshUserTokens(user);
+			} else {
+				this.clearSession();
+			}
+		});
+	}
 
-  private checkAuthStatus(): void {
-    if (this.initialCheckDone || this.isRefreshing) return;
+	getCookie(name: string): string | null {
+		const value = `; ${document.cookie}`;
+		const parts = value.split(`; ${name}=`);
+		if (parts.length === 2) {
+			return parts.pop()?.split(';').shift() || null;
+		}
+		return null;
+	}
 
-    this.getCurrentUser().subscribe({
-      next: (user) => {
-        this.userSubject.next(user);
-        this.startRefreshTokenTimer();
-        this.initialCheckDone = true;
-      },
-      error: () => {
-        this.clearSession();
-        this.initialCheckDone = true;
-        this.router.navigate(['/login']);
-      },
-    });
-  }
+	// Method to update user state
+	updateUser(user: User | undefined): void {
+		this.userSubject.next(user);
+	}
 
-  getCurrentUser(): Observable<User> {
-    // Only make the API call if we haven't checked the auth status yet
-    if (this.initialCheckDone && this.userSubject.value) {
-      return new Observable((subscriber) => {
-        subscriber.next(this.userSubject.value);
-        subscriber.complete();
-      });
-    }
+	private async refreshUserTokens(user: User): Promise<void> {
+		try {
+			const idToken = await user.getIdToken(true);
+			const userCredential = await this.auth.currentUser?.getIdTokenResult();
 
-    return this.restService.get<User>('/auth/current').pipe(
-      tap((user) => {
-        this.userSubject.next(user as User);
-      }),
-      catchError((error) => {
-        this.clearSession();
-        return throwError(() => error);
-      })
-    );
-  }
+			if (userCredential) {
+				await this.handleFirebaseUser(user, idToken);
+			}
+		} catch (error) {
+			console.error('Error refreshing tokens:', error);
+			this.clearSession();
+		}
+	}
 
-  login(email: string, password: string): Observable<any> {
-    return this.restService.post<any>('/auth/login', { email, password }).pipe(
-      tap((response) => {
-        if (response && response.user) {
-          this.userSubject.next(response.user);
-          // Ensure navigation happens after state update
-          setTimeout(() => {
-            this.router.navigate(['/dashboard']).then(() => {
-              // Optionally log navigation success/failure
-              console.log('Navigation complete');
-            });
-          }, 0);
-        }
-      }),
-      catchError((error) => {
-        console.error('Login error:', error);
-        return throwError(() => error);
-      })
-    );
-  }
+	private async handleFirebaseUser(
+		firebaseUser: User,
+		idToken: string
+	): Promise<void> {
+		try {
+			// First, set the tokens via backend
+			await firstValueFrom(
+				this.tokenService.setTokens({
+					idToken,
+					refreshToken: (firebaseUser as User).refreshToken || '',
+				})
+			);
 
-  register(userData: any): Observable<void> {
-    return this.restService.post<void>('/auth/register', userData).pipe(
-      catchError((error) => {
-        console.error('Registration error:', error);
-        return throwError(() => error);
-      })
-    );
-  }
+			// Then proceed with session creation
+			this.restService.get('/auth/current').subscribe({
+				next: (response) => {
+					const authUser: User = Object.assign({}, firebaseUser);
+					this.userSubject.next(authUser);
+					this.startRefreshTokenTimer();
+				},
+				error: (error) => {
+					console.error('Error setting session:', error);
+					this.clearSession();
+				},
+			});
+		} catch (error) {
+			console.error('Error handling Firebase user:', error);
+			this.clearSession();
+		}
+	}
 
-  logout(): Observable<void> {
-    return this.restService.post<void>('/auth/logout', {}).pipe(
-      tap(() => {
-        this.clearSession();
-        this.router.navigate(['/login']);
-      }),
-      catchError((error) => {
-        console.error('Logout error:', error);
-        this.clearSession(); // Still clear session even if API call fails
-        return throwError(() => error);
-      })
-    );
-  }
+	private verifyFirebaseToken(token: string): Observable<User> {
+		return this.restService.post<User>('/auth/current', {
+			token,
+		});
+	}
 
-  private clearSession(): void {
-    this.userSubject.next(undefined);
-    this.stopRefreshTokenTimer();
-  }
+	async signInWithGoogle(): Promise<void> {
+		try {
+			const provider = new GoogleAuthProvider();
+			const result = await signInWithPopup(this.auth, provider);
+			console.log('result', result);
+			// Get fresh tokens after sign in
+			const idToken = await result.user.getIdToken(true);
+			const refreshToken = (result as any)._tokenResponse?.refreshToken || '';
+			console.log('idToken', idToken);
+			console.log('refreshToken', refreshToken);
+			await this.handleFirebaseUser(result.user, idToken);
+			this.router.navigate(['/dashboard']);
+		} catch (error) {
+			console.error('Google sign-in error:', error);
+			throw error;
+		}
+	}
 
-  isAuthenticated(): boolean {
-    return !!this.userSubject.value;
-  }
+	private checkAuthStatus(): void {
+		if (this.initialCheckDone || this.isRefreshing || this.userSubject.value) {
+			return;
+		}
 
-  private startRefreshTokenTimer(): void {
-    // Refresh token 1 minute before expiry (14 minutes for 15-minute access token)
-    const refreshInterval = 14 * 60 * 1000;
+		const currentUser = this.auth.currentUser;
+		if (currentUser) {
+			this.refreshUserTokens(currentUser);
+		} else {
+			this.clearSession();
+		}
+		this.initialCheckDone = true;
+	}
 
-    this.stopRefreshTokenTimer();
-    this.refreshTokenTimeout = setInterval(() => {
-      this.refreshToken().subscribe();
-    }, refreshInterval);
-  }
+	getCurrentUser(): Observable<any> {
+		if (this.userSubject.value) {
+			return new Observable((subscriber) => {
+				subscriber.next(this.userSubject.value);
+				subscriber.complete();
+			});
+		}
 
-  private refreshToken(): Observable<void> {
-    if (this.isRefreshing) {
-      return throwError(() => new Error('Token refresh already in progress'));
-    }
+		return this.restService.get<any>('/auth/current').pipe(
+			tap((result) => {
+				if (!this.userSubject.value) {
+					this.userSubject.next(result.data as User);
+				}
+			}),
+			catchError((error) => {
+				this.clearSession();
+				return throwError(() => error);
+			})
+		);
+	}
 
-    this.isRefreshing = true;
+	login(email: string, password: string): Observable<any> {
+		return this.restService.post<any>('/auth/login', { email, password }).pipe(
+			switchMap((response) => {
+				if (response && response.success) {
+					return this.getCurrentUser().pipe(
+						tap(() => {
+							this.startRefreshTokenTimer();
+							this.router.navigate(['/dashboard']);
+						}),
+						map(() => response)
+					);
+				}
+				return throwError(() => new Error('Login failed'));
+			}),
+			catchError((error) => {
+				console.error('Login error:', error);
+				this.clearSession();
+				return throwError(() => error);
+			})
+		);
+	}
 
-    return this.restService.post<void>('/auth/refresh', {}).pipe(
-      tap(() => {
-        this.startRefreshTokenTimer();
-      }),
-      catchError((error) => {
-        this.clearSession();
-        return throwError(() => error);
-      }),
-      finalize(() => {
-        this.isRefreshing = false;
-      })
-    );
-  }
+	logout(): Observable<void> {
+		return new Observable((subscriber) => {
+			Promise.all([
+				this.auth.signOut(),
+				firstValueFrom(this.restService.post<void>('/auth/logout', {})),
+			])
+				.then(() => {
+					this.clearSession();
+					this.router.navigate(['/login']);
+					subscriber.complete();
+				})
+				.catch((error) => {
+					console.error('Erreur de déconnexion :', error);
+					this.clearSession();
+					this.router.navigate(['/login']);
+					subscriber.error(error);
+				});
+		});
+	}
 
-  private stopRefreshTokenTimer(): void {
-    if (this.refreshTokenTimeout) {
-      clearInterval(this.refreshTokenTimeout);
-    }
-  }
+	private clearSession(): void {
+		this.stopRefreshTokenTimer();
+		this.tokenService.clearIdToken();
+		this.tokenService.clearRefreshTokenOnCookie();
+		this.tokenService.clearIdTokenOnCookie();
+		this.userSubject.next(undefined);
+		this.initialCheckDone = false;
+		this.isRefreshing = false;
+	}
 
-  ngOnDestroy(): void {
-    this.stopRefreshTokenTimer();
-    this.userSubject.complete();
-  }
+	isAuthenticated(): boolean {
+		return !!this.userSubject.value;
+	}
+
+	private startRefreshTokenTimer(): void {
+		const refreshInterval = 14 * 60 * 1000;
+		this.stopRefreshTokenTimer();
+		this.refreshTokenTimeout = setInterval(() => {
+			this.refreshToken().subscribe();
+		}, refreshInterval);
+	}
+
+	refreshToken(): Observable<void> {
+		if (this.isRefreshing) {
+			return throwError(() => new Error('Token refresh in progress'));
+		}
+
+		this.isRefreshing = true;
+		const currentUser = this.auth.currentUser;
+
+		if (!currentUser) {
+			this.clearSession();
+			return throwError(() => new Error('No authenticated user'));
+		}
+
+		return from(currentUser.getIdToken(true)).pipe(
+			switchMap((token: string) => {
+				return from(this.refreshUserTokens(currentUser));
+			}),
+			catchError((error) => {
+				this.clearSession();
+				return throwError(() => error);
+			}),
+			finalize(() => {
+				this.isRefreshing = false;
+			}),
+			map(() => void 0)
+		);
+	}
+
+	private stopRefreshTokenTimer(): void {
+		if (this.refreshTokenTimeout) {
+			clearInterval(this.refreshTokenTimeout);
+		}
+	}
+
+	ngOnDestroy(): void {
+		this.stopRefreshTokenTimer();
+		this.userSubject.complete();
+	}
 }
 
 
@@ -1541,6 +2166,52 @@ export class RestService {
 
 
 ================================================
+File: services/_core/route-logging.service.spec.ts
+================================================
+import { TestBed } from '@angular/core/testing';
+
+import { RouteLoggingService } from './route-logging.service';
+
+describe('RouteLoggingService', () => {
+  let service: RouteLoggingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(RouteLoggingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+
+
+================================================
+File: services/_core/route-logging.service.ts
+================================================
+import { Injectable } from '@angular/core';
+
+@Injectable({
+	providedIn: 'root',
+})
+export class RouteLoggingService {
+	logRouteHit(route: string) {
+		console.log(`🛣️ Route Hit: ${route}`);
+	}
+
+	logGuardCheck(guardName: string, path: string) {
+		console.log(`🛡️ ${guardName} Check - Path: ${path}`);
+	}
+
+	logGuardResult(guardName: string, result: boolean) {
+		console.log(
+			`🔒 ${guardName} Result: ${result ? '✅ Allowed' : '❌ Blocked'}`
+		);
+	}
+}
+
+
+================================================
 File: services/_core/token/token.service.spec.ts
 ================================================
 import { TestBed } from '@angular/core/testing';
@@ -1567,65 +2238,80 @@ File: services/_core/token/token.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, retry, tap, timeout } from 'rxjs/operators';
 import { environment } from '../../../../../environments/environment';
+import { RestService } from '../rest/rest.service';
 
 @Injectable({
-    providedIn: 'root',
+	providedIn: 'root',
 })
 export class TokenService {
-    private apiUrl = `${environment.urlBackend}/api`;
-    private idToken: string | null = null; // Stored in memory
+	private idToken: string | null = null; // Stored in memory
 
-    constructor(private http: HttpClient) { }
+	constructor(private restService: RestService) {}
 
-    // Get the ID Token
-    getIdToken(): string | null {
-        return this.idToken;
-    }
+	// Get the ID Token
+	getIdToken(): string | null {
+		return this.idToken;
+	}
 
-    // Set the ID Token
-    setIdToken(token: string): void {
-        this.idToken = token;
-    }
+	// Set the ID Token
+	setIdToken(token: string): void {
+		this.idToken = token;
+	}
 
-    // Clear the ID Token
-    clearIdToken(): void {
-        this.idToken = null;
-    }
+	// Clear the ID Token
+	clearIdToken(): void {
+		this.idToken = null;
+	}
 
-    // Refresh the ID Token using HttpOnly cookie
-    refreshIdToken(): Observable<string> {
-        return this.http.get<{ idToken: string }>(
-            `${this.apiUrl}/auth/refreshtoken`, 
-            { withCredentials: true } // Ensure cookies are sent with the request
-        ).pipe(
-            tap((response: any) => {
-                this.setIdToken(response.idToken); // Update the ID Token in memory
-            }),
-            catchError((error) => {
-                this.clearIdToken();
-                console.error('❌ Failed to refresh token:', error);
-                return throwError(() => new Error('Failed to refresh access token'));
-            }),
-            map(response => response.idToken)
-        );
-    }
+	clearIdTokenOnCookie(): void {
+		console.log('clearIdTokenOnCookie');
+		const cookieName = 'idToken';
+		document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+	}
+
+	clearRefreshTokenOnCookie(): void {
+		console.log('clearRefreshTokenOnCookie');
+		const cookieName = 'refreshToken';
+		document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+	}
+
+	// Refresh the ID Token using HttpOnly cookie
+	refreshIdToken(): Observable<string> {
+		return this.restService.get<{ idToken: string }>(`/auth/refreshtoken`).pipe(
+			retry(1), // Add retry for network issues
+			timeout(5000), // Add timeout
+			tap((response: any) => {
+				this.setIdToken(response.idToken);
+			}),
+			catchError((error) => {
+				this.clearIdToken();
+				return throwError(() => error);
+			})
+		);
+	}
+
+	setTokens(tokens: { idToken: string; refreshToken: string }) {
+		// The actual token storage will be handled by your backend
+		return this.restService.post(`/auth/set-tokens`, tokens);
+	}
 }
 
 
 ================================================
-File: services/auth/google.service.spec.ts
+File: services/error-test/error-test.service.spec.ts
 ================================================
 import { TestBed } from '@angular/core/testing';
-import { GoogleAuthService } from './google.service';
 
-describe('GoogleAuthService', () => {
-  let service: GoogleAuthService;
+import { ErrorTestService } from './error-test.service';
+
+describe('ErrorTestService', () => {
+  let service: ErrorTestService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(GoogleAuthService);
+    service = TestBed.inject(ErrorTestService);
   });
 
   it('should be created', () => {
@@ -1635,102 +2321,222 @@ describe('GoogleAuthService', () => {
 
 
 ================================================
-File: services/auth/google.service.ts
+File: services/error-test/error-test.service.ts
+================================================
+// error-test.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+
+@Injectable({
+	providedIn: 'root',
+})
+export class ErrorTestService {
+	private apiUrl = environment.urlBackend;
+
+	constructor(private http: HttpClient) {}
+
+	testError(statusCode: number) {
+		return this.http.get(`${this.apiUrl}/test-error/${statusCode}`);
+	}
+
+	testValidationError() {
+		return this.http.post(`${this.apiUrl}/test-error/validation`, {
+			email: 'invalid',
+			password: '123',
+		});
+	}
+
+	testNetworkError() {
+		// This will cause a network error
+		return this.http.get('https://non-existent-domain.example');
+	}
+}
+
+
+================================================
+File: services/image/image.service.spec.ts
+================================================
+import { TestBed } from '@angular/core/testing';
+
+import { ImageService } from './image.service';
+
+describe('ImageService', () => {
+  let service: ImageService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(ImageService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+
+
+================================================
+File: services/image/image.service.ts
 ================================================
 import { Injectable } from '@angular/core';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Observable, of } from 'rxjs';
+
+@Injectable({
+	providedIn: 'root',
+})
+export class ImageService {
+	constructor(private sanitizer: DomSanitizer) {}
+
+	convertBase64ToSafeUrl(base64String: string): SafeUrl {
+		if (!base64String) {
+			return 'assets/images/avatar.png';
+		}
+		try {
+			return this.sanitizer.bypassSecurityTrustUrl(base64String);
+		} catch (error) {
+			console.error('Error converting base64 to safe URL:', error);
+			return 'assets/images/avatar.png';
+		}
+	}
+
+	// Convert base64 string to Blob
+	base64ToBlob(base64: string): Blob {
+		try {
+			const byteString = atob(base64);
+			const arrayBuffer = new ArrayBuffer(byteString.length);
+			const uint8Array = new Uint8Array(arrayBuffer);
+
+			for (let i = 0; i < byteString.length; i++) {
+				uint8Array[i] = byteString.charCodeAt(i);
+			}
+
+			return new Blob([arrayBuffer], { type: 'image/png' });
+		} catch (error) {
+			console.error('Error converting base64 to Blob:', error);
+			return new Blob();
+		}
+	}
+
+	// Create an object URL from base64
+	createObjectUrlFromBase64(base64: string): Observable<string> {
+		try {
+			const blob = this.base64ToBlob(base64);
+			return of(URL.createObjectURL(blob));
+		} catch (error) {
+			console.error('Error creating object URL:', error);
+			return of('');
+		}
+	}
+}
+
+
+================================================
+File: services/profile-service/profile.interface.ts
+================================================
+export interface Profile {
+	email: string;
+	firstname: string;
+	lastname: string;
+	company_name: string;
+	address: string;
+	siret: string;
+	notification: boolean;
+	phone: string;
+	authProvider?: string;
+	linkedAccounts?: string[];
+}
+
+
+================================================
+File: services/profile-service/profile.service.spec.ts
+================================================
+import { TestBed } from '@angular/core/testing';
+
+import { ProfileService } from './profile.service';
+
+describe('ProfileService', () => {
+	let service: ProfileService;
+
+	beforeEach(() => {
+		TestBed.configureTestingModule({});
+		service = TestBed.inject(ProfileService);
+	});
+
+	it('should be created', () => {
+		expect(service).toBeTruthy();
+	});
+});
+
+
+================================================
+File: services/profile-service/profile.service.ts
+================================================
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, DestroyRef } from '@angular/core';
+import { Auth, user } from '@angular/fire/auth';
+import { Firestore, doc, docData } from '@angular/fire/firestore';
 import {
-  Auth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  User,
-} from '@angular/fire/auth';
-import { Observable } from 'rxjs';
-
-@Injectable({
-  providedIn: 'root',
-})
-export class GoogleAuthService {
-  user$: Observable<User | null>;
-
-  constructor(private auth: Auth) {
-    this.user$ = new Observable((subscriber) => {
-      return this.auth.onAuthStateChanged(subscriber);
-    });
-  }
-
-  async signInWithGoogle() {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(this.auth, provider);
-      console.log('Successfully signed in:', result.user.email);
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-    }
-  }
-
-  async signOut() {
-    try {
-      await this.auth.signOut();
-      console.log('Successfully signed out');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  }
-}
-
-
-================================================
-File: services/profil-service/profil.service.spec.ts
-================================================
-import { TestBed } from '@angular/core/testing';
-
-import { ProfilService } from './profil.service';
-
-describe('ProfilService', () => {
-  let service: ProfilService;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(ProfilService);
-  });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-});
-
-
-================================================
-File: services/profil-service/profil.service.ts
-================================================
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Profil } from '../../models/profil.model';
+	Subject,
+	Observable,
+	takeUntil,
+	switchMap,
+	throwError,
+	map,
+} from 'rxjs';
+import { Profile } from './profile.interface';
 import { RestService } from '../_core/rest/rest.service';
+import { AuthService } from '../_core/auth/auth.service';
+import { IContact } from '../../interface/contact.interface';
 
 @Injectable({
-  providedIn: 'root',
+	providedIn: 'root',
 })
-export class ProfilService {
-  constructor(private rest: RestService) {}
+export class ProfileService {
+	private restService: RestService = inject(RestService);
+	private authService: AuthService = inject(AuthService);
+	private firestore: Firestore = inject(Firestore);
+	private readonly destroy$ = new Subject<void>();
+	private apiUrl = 'your-backend-url/api';
 
-  getProfil(): Observable<Profil> {
-    return this.rest.get<Profil>(`/users/me/profil`);
-  }
+	constructor(private http: HttpClient) {
+		inject(DestroyRef).onDestroy(() => {
+			this.destroy$.next();
+			this.destroy$.complete();
+		});
+	}
 
-  updateProfil(profil: Partial<Profil>): Observable<Profil> {
-    return this.rest.put<Profil>(`/users/me/profil`, profil);
-  }
+	// Keep simple reads direct from Firestore
+	getProfile(): Observable<any> {
+		const user = this.authService.getCurrentUser();
+		return this.restService.get<IContact>(`/contact`);
+	}
 
-  switchNotificationState(): Observable<boolean> {
-    return this.rest.put<boolean>(`/users/me/email-notif`, {});
-  }
+	// Move sensitive operations to backend
+	updateProfile(profile: Partial<Profile>): Observable<Profile> {
+		return this.restService.put<Profile>(`/profile`, profile);
+	}
 
-  updatePassword(lastPassword: string, newPassword: string): Observable<void> {
-    return this.rest.put<void>(`/users/me/password`, {
-      lastPassword: lastPassword,
-      newPassword: newPassword,
-    });
-  }
+	updatePassword(
+		currentPassword: string,
+		newPassword: string
+	): Observable<void> {
+		return this.restService.post<void>(`/profile/password`, {
+			currentPassword,
+			newPassword,
+		});
+	}
+
+	linkWithGoogle(): Observable<void> {
+		return this.restService.post<void>(`/profile/link/google`, {});
+	}
+
+	unlinkProvider(providerId: string): Observable<void> {
+		return this.restService.post<void>(`/profile/unlink/${providerId}`, {});
+	}
+
+	switchNotificationState(): Observable<boolean> {
+		return this.restService.post<boolean>(`/profile/notifications/toggle`, {});
+	}
 }
 

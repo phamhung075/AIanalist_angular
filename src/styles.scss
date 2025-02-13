@@ -1,18 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@use 'tailwindcss';
 
-.footer-wave {
-    position: relative;
-    margin-top: -50px;
+html,
+body {
+	height: 100%;
 }
-
-.footer-wave::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50px;
-    background: linear-gradient(to bottom right, transparent 49%, #1e3a8a 50%);
+body {
+	margin: 0;
+	font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
