@@ -1,0 +1,22 @@
+<div class="item" cdkDrag>
+	<div class="item-header">
+		<div class="item-info">
+			<span *ngIf="item.parent">{{ item.parent.uId }}</span> > {{ item.uId }}
+		</div>
+		<button class="delete-button" (click)="delItem()">X</button>
+	</div>
+
+	<div class="item-content">
+		<input *ngIf="item.type !== 'todolist' && item.type !== 'todo'" type="text" matInput placeholder="Input" [(ngModel)]="item.name" />
+
+		<span *ngIf="item.type === 'todolist'">ToDos: {{ item.name }}</span>
+		<span *ngIf="item.type === 'todo'">
+			Do: {{ item.name }}
+			<input type="checkbox" [(ngModel)]="item.value" />
+		</span>
+
+		<ng-container *ngFor="let nextItem of item.children">
+			<app-sub-item [item]="nextItem" [connectedTo2]="connectedTo2" (itemDrop)="onDragDrop($event)"> </app-sub-item>
+		</ng-container>
+	</div>
+</div>

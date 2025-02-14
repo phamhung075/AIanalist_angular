@@ -7,6 +7,22 @@ import { AuthGuard } from '@core/auth/guard/auth.guard';
 export const routes: Routes = [
 	{ path: '', redirectTo: 'login', pathMatch: 'full' },
 	{
+		path: 'tree2',
+		loadComponent: () =>
+			import('../ui/pages/branch-display2/branch-display2.component').then(
+				(m) => m.BranchDisplay2Component
+			),
+		canActivate: [NonAuthGuard],
+	},
+	{
+		path: 'tree',
+		loadComponent: () =>
+			import('../ui/pages/branch-display/branch-display.component').then(
+				(m) => m.AppTreeContainer
+			),
+		canActivate: [],
+	},
+	{
 		path: 'login',
 		loadComponent: () =>
 			import('../ui/pages/login/login.component').then((m) => m.LoginComponent),

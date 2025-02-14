@@ -1,0 +1,37 @@
+<div class="branch-container">
+	<ng-container *ngFor="let state of states">
+		<div class="branch">
+			<div class="branch-title">{{ state }}</div>
+			<div
+				class="branch-content"
+				cdkDropList
+				[id]="this[state].uId"
+				[cdkDropListData]="this[state].children"
+				[cdkDropListConnectedTo]="connectedTo2(['root', 'root_3', 'root_2'])"
+				(cdkDropListDropped)="onDragDrop($event)"
+			>
+				<ng-container *ngFor="let item of this[state].children">
+					<app-sub-item [item]="item" [connectedTo2]="connectedTo2(['root', 'root_3', 'root_2'])" (itemDrop)="onDragDrop($event)">
+					</app-sub-item>
+				</ng-container>
+			</div>
+		</div>
+	</ng-container>
+</div>
+
+<div class="controls">
+	<button (click)="addItem()">Add Item</button>
+	<button (click)="generateParent(this.root)">Generate Parents</button>
+</div>
+
+<div class="debug-info">
+	<h3>States:</h3>
+	<ng-container *ngFor="let state of states">
+		<span>[ {{ state }} ] </span>
+	</ng-container>
+
+	<h3>Board:</h3>
+	<ng-container *ngFor="let aboard of board">
+		<div>[ {{ aboard | json }} ]</div>
+	</ng-container>
+</div>
