@@ -1,11 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { DestroyRef, Injectable, inject } from '@angular/core';
 import { Firestore } from '@angular/fire/firestore';
-import { Observable, Subject } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { IContact } from '../../interface/contact.interface';
 import { AuthService } from '../_core/auth/auth.service';
 import { RestService } from '../_core/rest/rest.service';
 import { Profile } from './profile.interface';
+import { User } from '@angular/fire/auth';
 
 @Injectable({
 	providedIn: 'root',
@@ -24,12 +25,6 @@ export class ProfileService {
 		});
 	}
 
-	// Keep simple reads direct from Firestore
-	getProfile(): Observable<any> {
-		const user = this.authService.getCurrentUser();
-		return this.restService.get<IContact>(`/contact`);
-	}
-
 	// Move sensitive operations to backend
 	updateProfile(profile: Partial<Profile>): Observable<Profile> {
 		return this.restService.put<Profile>(`/profile`, profile);
@@ -45,15 +40,15 @@ export class ProfileService {
 		});
 	}
 
-	linkWithGoogle(): Observable<void> {
-		return this.restService.post<void>(`/profile/link/google`, {});
+	linkWithGoogle(): Observable<boolean> {
+		return of(true);
 	}
 
-	unlinkProvider(providerId: string): Observable<void> {
-		return this.restService.post<void>(`/profile/unlink/${providerId}`, {});
+	unlinkProvider(providerId: string): Observable<boolean> {
+		return of(true);
 	}
 
 	switchNotificationState(): Observable<boolean> {
-		return this.restService.post<boolean>(`/profile/notifications/toggle`, {});
+		return of(true);
 	}
 }
